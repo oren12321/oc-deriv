@@ -4,8 +4,9 @@
 #include <type_traits>
 #include <cmath>
 #include <limits>
+#include <memory>
 
-#include <math/core/utils.h>
+#include <math/core/allocators.h>
 
 namespace math::algorithms {
     template <typename T>
@@ -18,84 +19,103 @@ namespace math::algorithms {
     }
 }
 
-namespace math::algorithms::derivatives {
+namespace math::algorithms::derivatives::backward {
+    template <typename T>
+    concept Decimal = std::is_floating_point_v<T>;
 
-    class Const {
+    template <Decimal F, math::core::allocators::Allocator Internal_allocator>
+    struct Node {
+        virtual ~Node() {}
+        virtual F compute() = 0;
+        virtual std::shared_ptr<Node<F, Internal_allocator>> backward(std::size_t id) = 0;
+    };
+
+    template <Decimal F, math::core::allocators::Allocator Internal_allocator>
+    class Const : public Node<F, Internal_allocator> {
     public:
-        Const(double value)
+        Const(F value)
             : value_(value) {}
 
-        double compute()
+        F compute() override
         {
             return value_;
         }
 
-        double backward(std::size_t)
+        std::shared_ptr<Node<F, Internal_allocator>> backward(std::size_t id) override
         {
-            return 0.0;
+            return math::core::allocators::aux::make_shared<Internal_allocator, Const<F, Internal_allocator>>(F{ 0 });
         }
+
     private:
-        double value_;
+        F value_;
     };
 
-    class Var {
+    template <Decimal F, math::core::allocators::Allocator Internal_allocator>
+    class Var : public Node<F, Internal_allocator> {
     public:
-        Var(double value, std::size_t index)
-            : value_(value), index_(index) {}
+        Var(std::size_t id, F value)
+            : id_(id), value_(value) {}
 
-        double compute()
+        F compute() override
         {
             return value_;
         }
 
-        double backward(std::size_t index)
+        std::shared_ptr<Node<F, Internal_allocator>> backward(std::size_t id) override
         {
-            return index_ == index ? 1.0 : 0.0;
+            return id_ == id ? 
+                math::core::allocators::aux::make_shared<Internal_allocator, Const<F, Internal_allocator>>(F{ 1 }) :
+                math::core::allocators::aux::make_shared<Internal_allocator, Const<F, Internal_allocator>>(F{ 0 });
         }
+
     private:
+        std::size_t id_;
         double value_;
-        std::size_t index_;
     };
 
-    template <typename T, typename U>
-    class Add {
+    template <Decimal F, math::core::allocators::Allocator Internal_allocator>
+    class Add : public Node<F, Internal_allocator> {
     public:
-        Add(T x, U y)
-            : x_(x), y_(y) {}
+        Add(const std::shared_ptr<Node<F, Internal_allocator>>& n1, const std::shared_ptr<Node<F, Internal_allocator>>& n2)
+            : n1_(n1), n2_(n2) {}
 
-        double compute()
+        F compute() override
         {
-            return x_.compute() + y_.compute();
+            return n1_->compute() + n2_->compute();
         }
 
-        double backward(std::size_t index)
+        std::shared_ptr<Node<F, Internal_allocator>> backward(std::size_t id)
         {
-            return x_.backward(index) + y_.backward(index);
+            return math::core::allocators::aux::make_shared<Internal_allocator, Add<F, Internal_allocator>>(n1_->backward(id), n2_->backward(id));
+        }
+
+    private:
+        std::shared_ptr<Node<F, Internal_allocator>> n1_;
+        std::shared_ptr<Node<F, Internal_allocator>> n2_;
+    };
+
+    template <Decimal F, math::core::allocators::Allocator Internal_allocator>
+    class Mul : public Node<F, Internal_allocator> {
+    public:
+        Mul(const std::shared_ptr<Node<F, Internal_allocator>>& n1, const std::shared_ptr<Node<F, Internal_allocator>>& n2)
+            : n1_(n1), n2_(n2) {}
+
+        F compute() override
+        {
+            return n1_->compute() * n2_->compute();
+        }
+
+        std::shared_ptr<Node<F, Internal_allocator>> backward(std::size_t id) override
+        {
+            return math::core::allocators::aux::make_shared<Internal_allocator, Add<F, Internal_allocator>>(
+                math::core::allocators::aux::make_shared<Internal_allocator, Mul<F, Internal_allocator>>(n1_->backward(id), n2_),
+                math::core::allocators::aux::make_shared<Internal_allocator, Mul<F, Internal_allocator>>(n1_, n2_->backward(id)));
         }
     private:
-        T x_;
-        U y_;
+        std::shared_ptr<Node<F, Internal_allocator>> n1_;
+        std::shared_ptr<Node<F, Internal_allocator>> n2_;
     };
 
-    template <typename T, typename U>
-    class Mul {
-    public:
-        Mul(T x, U y)
-            : x_(x), y_(y) {}
-
-        double compute()
-        {
-            return x_.compute() * y_.compute();
-        }
-
-        double backward(std::size_t index)
-        {
-            return x_.backward(index) * y_.compute() + x_.compute() * y_.backward(index);
-        }
-    private:
-        T x_;
-        U y_;
-    };
 }
 
 #endif // MATH_ALGORITHMS_H
