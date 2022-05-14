@@ -4,6 +4,7 @@
 
 #include <math/core/algorithms.h>
 #include <math/core/allocators.h>
+#include <math/core/pointers.h>
 
 TEST(Algorithms_test, two_numbers_can_be_compared_with_specified_percision)
 {
@@ -24,6 +25,7 @@ TEST(Algorithms_test, can_perform_backward_derivation)
 {
     using namespace math::algorithms::derivatives::backward;
     using namespace math::core::allocators;
+    using namespace math::core::pointers;
 
     using Allocator = Shared_allocator<Malloc_allocator, 0>;
     using D_node = Node<float, Allocator>;
@@ -33,15 +35,15 @@ TEST(Algorithms_test, can_perform_backward_derivation)
     using D_const = Const<float, Allocator>;
     
     // Z = X^2 + 3xy + 1
-    std::shared_ptr<D_node> x = aux::make_shared<Allocator, D_var>(0, 3.0f);
-    std::shared_ptr<D_node> y = aux::make_shared<Allocator, D_var>(1, 2.0f);
-    std::shared_ptr<D_node> z = aux::make_shared<Allocator, D_add>(
-        aux::make_shared<Allocator, D_add>(
-            aux::make_shared<Allocator, D_mul>(x, x),
-            aux::make_shared<Allocator, D_mul>(
-                aux::make_shared<Allocator, D_const>(3.0),
-                aux::make_shared<Allocator, D_mul>(x, y))),
-        aux::make_shared<Allocator, D_const>(1.0));
+    Shared_ptr<D_node, Allocator> x = Shared_ptr<D_var, Allocator>::make_shared(0, 3.0f);
+    Shared_ptr<D_node, Allocator> y = Shared_ptr<D_var, Allocator>::make_shared(1, 2.0f);
+    Shared_ptr<D_node, Allocator> z = Shared_ptr<D_add, Allocator>::make_shared(
+        Shared_ptr<D_add, Allocator>::make_shared(
+            Shared_ptr<D_mul, Allocator>::make_shared(x, x),
+            Shared_ptr<D_mul, Allocator>::make_shared(
+                Shared_ptr<D_const, Allocator>::make_shared(3.0),
+                Shared_ptr<D_mul, Allocator>::make_shared(x, y))),
+        Shared_ptr<D_const, Allocator>::make_shared(1.0));
 
     EXPECT_EQ(28.f, z->compute());
     EXPECT_EQ(12.f, z->backward(0)->compute());

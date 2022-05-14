@@ -4,9 +4,9 @@
 #include <type_traits>
 #include <cmath>
 #include <limits>
-#include <memory>
 
 #include <math/core/allocators.h>
+#include <math/core/pointers.h>
 
 namespace math::algorithms {
     template <typename T>
@@ -27,7 +27,7 @@ namespace math::algorithms::derivatives::backward {
     struct Node {
         virtual ~Node() {}
         virtual F compute() = 0;
-        virtual std::shared_ptr<Node<F, Internal_allocator>> backward(std::size_t id) = 0;
+        virtual math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) = 0;
     };
 
     template <Decimal F, math::core::allocators::Allocator Internal_allocator>
@@ -41,9 +41,9 @@ namespace math::algorithms::derivatives::backward {
             return value_;
         }
 
-        std::shared_ptr<Node<F, Internal_allocator>> backward(std::size_t id) override
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) override
         {
-            return math::core::allocators::aux::make_shared<Internal_allocator, Const<F, Internal_allocator>>(F{ 0 });
+            return math::core::pointers::Shared_ptr<Const<F, Internal_allocator>, Internal_allocator>::make_shared(F{ 0 });
         }
 
     private:
@@ -61,11 +61,11 @@ namespace math::algorithms::derivatives::backward {
             return value_;
         }
 
-        std::shared_ptr<Node<F, Internal_allocator>> backward(std::size_t id) override
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) override
         {
             return id_ == id ? 
-                math::core::allocators::aux::make_shared<Internal_allocator, Const<F, Internal_allocator>>(F{ 1 }) :
-                math::core::allocators::aux::make_shared<Internal_allocator, Const<F, Internal_allocator>>(F{ 0 });
+                math::core::pointers::Shared_ptr<Const<F, Internal_allocator>, Internal_allocator>::make_shared(F{ 1 }) :
+                math::core::pointers::Shared_ptr<Const<F, Internal_allocator>, Internal_allocator>::make_shared(F{ 0 });
         }
 
     private:
@@ -76,7 +76,7 @@ namespace math::algorithms::derivatives::backward {
     template <Decimal F, math::core::allocators::Allocator Internal_allocator>
     class Add : public Node<F, Internal_allocator> {
     public:
-        Add(const std::shared_ptr<Node<F, Internal_allocator>>& n1, const std::shared_ptr<Node<F, Internal_allocator>>& n2)
+        Add(const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
             : n1_(n1), n2_(n2) {}
 
         F compute() override
@@ -84,20 +84,20 @@ namespace math::algorithms::derivatives::backward {
             return n1_->compute() + n2_->compute();
         }
 
-        std::shared_ptr<Node<F, Internal_allocator>> backward(std::size_t id)
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id)
         {
-            return math::core::allocators::aux::make_shared<Internal_allocator, Add<F, Internal_allocator>>(n1_->backward(id), n2_->backward(id));
+            return math::core::pointers::Shared_ptr<Add<F, Internal_allocator>, Internal_allocator>::make_shared(n1_->backward(id), n2_->backward(id));
         }
 
     private:
-        std::shared_ptr<Node<F, Internal_allocator>> n1_;
-        std::shared_ptr<Node<F, Internal_allocator>> n2_;
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n1_;
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
     };
 
     template <Decimal F, math::core::allocators::Allocator Internal_allocator>
     class Mul : public Node<F, Internal_allocator> {
     public:
-        Mul(const std::shared_ptr<Node<F, Internal_allocator>>& n1, const std::shared_ptr<Node<F, Internal_allocator>>& n2)
+        Mul(const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
             : n1_(n1), n2_(n2) {}
 
         F compute() override
@@ -105,15 +105,15 @@ namespace math::algorithms::derivatives::backward {
             return n1_->compute() * n2_->compute();
         }
 
-        std::shared_ptr<Node<F, Internal_allocator>> backward(std::size_t id) override
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) override
         {
-            return math::core::allocators::aux::make_shared<Internal_allocator, Add<F, Internal_allocator>>(
-                math::core::allocators::aux::make_shared<Internal_allocator, Mul<F, Internal_allocator>>(n1_->backward(id), n2_),
-                math::core::allocators::aux::make_shared<Internal_allocator, Mul<F, Internal_allocator>>(n1_, n2_->backward(id)));
+            return math::core::pointers::Shared_ptr<Add<F, Internal_allocator>, Internal_allocator>::make_shared(
+                math::core::pointers::Shared_ptr<Mul<F, Internal_allocator>, Internal_allocator>::make_shared(n1_->backward(id), n2_),
+                math::core::pointers::Shared_ptr<Mul<F, Internal_allocator>, Internal_allocator>::make_shared(n1_, n2_->backward(id)));
         }
     private:
-        std::shared_ptr<Node<F, Internal_allocator>> n1_;
-        std::shared_ptr<Node<F, Internal_allocator>> n2_;
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n1_;
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
     };
 
 }
