@@ -4,9 +4,11 @@
 #include <type_traits>
 #include <cmath>
 #include <limits>
+#include <stdexcept>
 
 #include <math/core/allocators.h>
 #include <math/core/pointers.h>
+#include <math/core/utils.h>
 
 namespace math::algorithms {
     template <typename T>
@@ -95,6 +97,47 @@ namespace math::algorithms::derivatives::backward {
     };
 
     template <Decimal F, math::core::allocators::Allocator Internal_allocator>
+    class Sub : public Node<F, Internal_allocator> {
+    public:
+        Sub(const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+            : n1_(n1), n2_(n2) {}
+
+        F compute() override
+        {
+            return n1_->compute() - n2_->compute();
+        }
+
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id)
+        {
+            return math::core::pointers::Shared_ptr<Sub<F, Internal_allocator>, Internal_allocator>::make_shared(n1_->backward(id), n2_->backward(id));
+        }
+
+    private:
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n1_;
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
+    };
+
+    template <Decimal F, math::core::allocators::Allocator Internal_allocator>
+    class Neg : public Node<F, Internal_allocator> {
+    public:
+        Neg(const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+            : n_(n) {}
+
+        F compute() override
+        {
+            return -n_->compute();
+        }
+
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id)
+        {
+            return math::core::pointers::Shared_ptr<Neg<F, Internal_allocator>, Internal_allocator>::make_shared(n_->backward(id));
+        }
+
+    private:
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
+    };
+
+    template <Decimal F, math::core::allocators::Allocator Internal_allocator>
     class Mul : public Node<F, Internal_allocator> {
     public:
         Mul(const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
@@ -116,6 +159,32 @@ namespace math::algorithms::derivatives::backward {
         math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
     };
 
+    template <Decimal F, math::core::allocators::Allocator Internal_allocator>
+    class Div : public Node<F, Internal_allocator> {
+    public:
+        Div(const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+            : n1_(n1), n2_(n2) {}
+
+        F compute() override
+        {
+            F n2_value{ n2_->compute() };
+            CORE_EXPECT(n2_value != 0, std::overflow_error, "division by zero");
+
+            return n1_->compute() / n2_value;
+        }
+
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) override
+        {
+            return math::core::pointers::Shared_ptr<Div<F, Internal_allocator>>::make_shared(
+                math::core::pointers::Shared_ptr<Sub<F, Internal_allocator>>::make_shared(
+                    math::core::pointers::Shared_ptr<Mul<F, Internal_allocator>>::make_shared(n1_->backward(id), n2_),
+                    math::core::pointers::Shared_ptr<Mul<F, Internal_allocator>>::make_shared(n1_, n2_->backward(id))),
+                math::core::pointers::Shared_ptr<Mul<F, Internal_allocator>>::make_shared(n2_, n2_));
+        }
+    private:
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n1_;
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
+    };
 }
 
 #endif // MATH_ALGORITHMS_H
