@@ -185,6 +185,51 @@ namespace math::algorithms::derivatives::backward {
         math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n1_;
         math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
     };
+
+    template <Decimal F, math::core::allocators::Allocator Internal_allocator>
+    class Sin : public Node<F, Internal_allocator> {
+    public:
+        Sin(const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+            : n_(n) {}
+
+        F compute() override
+        {
+            return std::sin(n_->compute());
+        }
+
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id)
+        {
+            return math::core::pointers::Shared_ptr<Mul<F, Internal_allocator>, Internal_allocator>::make_shared(
+                n_->backward(id),
+                math::core::pointers::Shared_ptr<Cos<F, Internal_allocator>, Internal_allocator>::make_shared(n_));
+        }
+
+    private:
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
+    };
+
+    template <Decimal F, math::core::allocators::Allocator Internal_allocator>
+    class Cos : public Node<F, Internal_allocator> {
+    public:
+        Cos(const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
+            : n_(v) {}
+
+        F compute() override
+        {
+            return std::cos(n_->compute());
+        }
+
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id)
+        {
+            return math::core::pointers::Shared_ptr<Mul<F, Internal_allocator>, Internal_allocator>::make_shared(
+                n_->backward(id),
+                math::core::pointers::Shared_ptr<Neg<F, Internal_allocator>, Internal_allocator>::make_shared(
+                    math::core::pointers::Shared_ptr<Sin<F, Internal_allocator>, Internal_allocator>::make_shared(n_)));
+        }
+
+    private:
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
+    };
 }
 
 #endif // MATH_ALGORITHMS_H
