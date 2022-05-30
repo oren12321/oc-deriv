@@ -176,6 +176,52 @@ TEST(Algorithm_test, sin_and_cos_backward_derivative)
     EXPECT_EQ(1.f * (-std::sin(1.f)), c->backward(0)->compute());
 }
 
+TEST(Algorithm_test, tan_and_sec_backward_derivative)
+{
+    using namespace math::algorithms::derivatives::backward;
+    using namespace math::core::allocators;
+    using namespace math::core::pointers;
+
+    using Allocator = Malloc_allocator;
+    using D_node = Node<float, Allocator>;
+    using D_var = Var<float, Allocator>;
+    using D_tan = Tan<float, Allocator>;
+    using D_sec = Sec<float, Allocator>;
+
+    Shared_ptr<D_var, Allocator> v = Shared_ptr<D_var, Allocator>::make_shared(0, 1.f);
+
+    Shared_ptr<D_tan, Allocator> t = Shared_ptr<D_tan, Allocator>::make_shared(v);
+    EXPECT_EQ(std::tan(1.f), t->compute());
+    EXPECT_EQ(1.f * (1.f / (std::cos(1.f) * std::cos(1.f))), t->backward(0)->compute());
+
+    Shared_ptr<D_sec, Allocator> s = Shared_ptr<D_sec, Allocator>::make_shared(v);
+    EXPECT_EQ(1.f / std::cos(1.f), s->compute());
+    EXPECT_EQ(1.f * (std::tan(1.f) / std::cos(1.f)), s->backward(0)->compute());
+}
+
+TEST(Algorithm_test, cot_and_csc_backward_derivative)
+{
+    using namespace math::algorithms::derivatives::backward;
+    using namespace math::core::allocators;
+    using namespace math::core::pointers;
+
+    using Allocator = Malloc_allocator;
+    using D_node = Node<float, Allocator>;
+    using D_var = Var<float, Allocator>;
+    using D_cot = Cot<float, Allocator>;
+    using D_csc = Csc<float, Allocator>;
+
+    Shared_ptr<D_var, Allocator> v = Shared_ptr<D_var, Allocator>::make_shared(0, 1.f);
+
+    Shared_ptr<D_cot, Allocator> ct = Shared_ptr<D_cot, Allocator>::make_shared(v);
+    EXPECT_EQ(1.f / std::tan(1.f), ct->compute());
+    EXPECT_EQ(1.f * (-1.f / (std::sin(1.f) * std::sin(1.f))), ct->backward(0)->compute());
+
+    Shared_ptr<D_csc, Allocator> cs = Shared_ptr<D_csc, Allocator>::make_shared(v);
+    EXPECT_EQ(1.f / std::sin(1.f), cs->compute());
+    EXPECT_EQ(1.f * (-1.f / (std::tan(1.f) * std::sin(1.f))), cs->backward(0)->compute());
+}
+
 TEST(Algorithms_test, can_perform_backward_derivation)
 {
     using namespace math::algorithms::derivatives::backward;
