@@ -337,6 +337,53 @@ namespace math::algorithms::derivatives::backward {
     private:
         math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
     };
+
+    template <Decimal F, math::core::allocators::Allocator Internal_allocator>
+    class Exp : public Node<F, Internal_allocator> {
+    public:
+        Exp(const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
+            : n_(v) {}
+
+        F compute() const override
+        {
+            return std::exp(n_->compute());
+        }
+
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+        {
+            return math::core::pointers::Shared_ptr<Mul<F, Internal_allocator>, Internal_allocator>::make_shared(
+                n_->backward(id),
+                math::core::pointers::Shared_ptr<Exp<F, Internal_allocator>, Internal_allocator>::make_shared(n_));
+        }
+
+    private:
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
+    };
+
+    template <Decimal F, math::core::allocators::Allocator Internal_allocator>
+    class Ln : public Node<F, Internal_allocator> {
+    public:
+        Ln(const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
+            : n_(v) {}
+
+        F compute() const override
+        {
+            F d{ n_->compute() };
+            CORE_EXPECT(d > F{ 0 }, std::overflow_error, "log of non-positive number");
+
+            return std::log(d);
+        }
+
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+        {
+            return math::core::pointers::Shared_ptr<Div<F, Internal_allocator>, Internal_allocator>::make_shared(
+                n_->backward(id),
+                n_);
+        }
+
+    private:
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
+    };
 }
 
 #endif // MATH_ALGORITHMS_H

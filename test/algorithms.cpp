@@ -222,6 +222,29 @@ TEST(Algorithm_test, cot_and_csc_backward_derivative)
     EXPECT_EQ(1.f * (-1.f / (std::tan(1.f) * std::sin(1.f))), cs->backward(0)->compute());
 }
 
+TEST(Algorithm_test, exp_and_ln_backward_derivative)
+{
+    using namespace math::algorithms::derivatives::backward;
+    using namespace math::core::allocators;
+    using namespace math::core::pointers;
+
+    using Allocator = Malloc_allocator;
+    using D_node = Node<float, Allocator>;
+    using D_var = Var<float, Allocator>;
+    using D_exp = Exp<float, Allocator>;
+    using D_ln = Ln<float, Allocator>;
+
+    Shared_ptr<D_var, Allocator> v = Shared_ptr<D_var, Allocator>::make_shared(0, 1.f);
+
+    Shared_ptr<D_exp, Allocator> e = Shared_ptr<D_exp, Allocator>::make_shared(v);
+    EXPECT_EQ(std::exp(1.f), e->compute());
+    EXPECT_EQ(1.f * std::exp(1.f), e->backward(0)->compute());
+
+    Shared_ptr<D_ln, Allocator> l = Shared_ptr<D_ln, Allocator>::make_shared(v);
+    EXPECT_EQ(std::log(1.f), l->compute());
+    EXPECT_EQ(1.f / 1.f, l->backward(0)->compute());
+}
+
 TEST(Algorithms_test, can_perform_backward_derivation)
 {
     using namespace math::algorithms::derivatives::backward;
