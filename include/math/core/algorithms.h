@@ -386,9 +386,59 @@ namespace math::algorithms::derivatives::backward {
     };
 
     template <Decimal F, math::core::allocators::Allocator Internal_allocator>
-    class Pow : public Node<F, Internal_allocator> {
+    class Pow_fn : public Node<F, Internal_allocator> {
     public:
-        Pow(const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+        Pow_fn(const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& f, F n)
+            : f_(f), n_(n) {}
+
+        F compute() const override
+        {
+            return std::pow(f_->compute(), n_);
+        }
+
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+        {
+            return math::core::pointers::Shared_ptr<Mul<F, Internal_allocator>, Internal_allocator>::make_shared(
+                f_->backward(id),
+                math::core::pointers::Shared_ptr<Mul<F, Internal_allocator>, Internal_allocator>::make_shared(
+                    math::core::pointers::Shared_ptr<Const<F, Internal_allocator>, Internal_allocator>::make_shared(n_),
+                    math::core::pointers::Shared_ptr<Pow_fn<F, Internal_allocator>, Internal_allocator>::make_shared(f_, n_ - F{ 1 })));
+        }
+
+    private:
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> f_;
+        F n_;
+    };
+
+    template <Decimal F, math::core::allocators::Allocator Internal_allocator>
+    class Pow_af : public Node<F, Internal_allocator> {
+    public:
+        Pow_af(F a, const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& f)
+            : a_(a), f_(f) {}
+
+        F compute() const override
+        {
+            return std::pow(a_, f_->compute());
+        }
+
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+        {
+            return math::core::pointers::Shared_ptr<Mul<F, Internal_allocator>, Internal_allocator>::make_shared(
+                f_->backward(id),
+                math::core::pointers::Shared_ptr<Mul<F, Internal_allocator>, Internal_allocator>::make_shared(
+                    math::core::pointers::Shared_ptr<Pow_af<F, Internal_allocator>, Internal_allocator>::make_shared(a_, f_),
+                    math::core::pointers::Shared_ptr<Const<F, Internal_allocator>, Internal_allocator>::make_shared(std::log(a_))));
+        }
+
+    private:
+        F a_;
+        math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> f_;
+    };
+
+    template <Decimal F, math::core::allocators::Allocator Internal_allocator>
+    class Pow_fg : public Node<F, Internal_allocator> {
+    public:
+        Pow_fg(const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
             : n1_(n1), n2_(n2) {}
 
         F compute() const override
@@ -399,7 +449,7 @@ namespace math::algorithms::derivatives::backward {
         math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
         {
             return math::core::pointers::Shared_ptr<Mul<F, Internal_allocator>, Internal_allocator>::make_shared(
-                math::core::pointers::Shared_ptr<Pow<F, Internal_allocator>, Internal_allocator>::make_shared(n1_, n2_),
+                math::core::pointers::Shared_ptr<Pow_fg<F, Internal_allocator>, Internal_allocator>::make_shared(n1_, n2_),
                 math::core::pointers::Shared_ptr<Add<F, Internal_allocator>, Internal_allocator>::make_shared(
                     math::core::pointers::Shared_ptr<Mul<F, Internal_allocator>, Internal_allocator>::make_shared(
                         math::core::pointers::Shared_ptr<Div<F, Internal_allocator>, Internal_allocator>::make_shared(n2_, n1_),

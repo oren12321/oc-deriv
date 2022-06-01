@@ -245,7 +245,7 @@ TEST(Algorithm_test, exp_and_ln_backward_derivative)
     EXPECT_EQ(1.f / 1.f, l->backward(0)->compute());
 }
 
-TEST(Algorithm_test, pow_backward_derivative)
+TEST(Algorithm_test, pow_f_by_n_backward_derivative)
 {
     using namespace math::algorithms::derivatives::backward;
     using namespace math::core::allocators;
@@ -255,7 +255,45 @@ TEST(Algorithm_test, pow_backward_derivative)
     using D_node = Node<float, Allocator>;
     using D_var = Var<float, Allocator>;
     using D_const = Const<float, Allocator>;
-    using D_pow = Pow<float, Allocator>;
+    using D_pow = Pow_fn<float, Allocator>;
+
+    Shared_ptr<D_var, Allocator> v = Shared_ptr<D_var, Allocator>::make_shared(0, 1.f);
+
+    Shared_ptr<D_pow, Allocator> p = Shared_ptr<D_pow, Allocator>::make_shared(v, 2.f);
+    EXPECT_EQ(std::pow(1.f, 2.f), p->compute());
+    EXPECT_EQ(2.f * 1.f, p->backward(0)->compute());
+}
+
+TEST(Algorithm_test, pow_a_by_f_backward_derivative)
+{
+    using namespace math::algorithms::derivatives::backward;
+    using namespace math::core::allocators;
+    using namespace math::core::pointers;
+
+    using Allocator = Malloc_allocator;
+    using D_node = Node<float, Allocator>;
+    using D_var = Var<float, Allocator>;
+    using D_const = Const<float, Allocator>;
+    using D_pow = Pow_af<float, Allocator>;
+
+    Shared_ptr<D_var, Allocator> v = Shared_ptr<D_var, Allocator>::make_shared(0, 1.f);
+
+    Shared_ptr<D_pow, Allocator> p = Shared_ptr<D_pow, Allocator>::make_shared(2.f, v);
+    EXPECT_EQ(std::pow(2.f, 1.f), p->compute());
+    EXPECT_EQ(1.f * std::pow(2.f, 1.f) * std::log(2.f), p->backward(0)->compute());
+}
+
+TEST(Algorithm_test, pow_f_by_g_backward_derivative)
+{
+    using namespace math::algorithms::derivatives::backward;
+    using namespace math::core::allocators;
+    using namespace math::core::pointers;
+
+    using Allocator = Malloc_allocator;
+    using D_node = Node<float, Allocator>;
+    using D_var = Var<float, Allocator>;
+    using D_const = Const<float, Allocator>;
+    using D_pow = Pow_fg<float, Allocator>;
 
     Shared_ptr<D_var, Allocator> v = Shared_ptr<D_var, Allocator>::make_shared(0, 1.f);
     Shared_ptr<D_const, Allocator> c = Shared_ptr<D_const, Allocator>::make_shared(2.f);
