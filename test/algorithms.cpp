@@ -303,6 +303,82 @@ TEST(Algorithm_test, pow_f_by_g_backward_derivative)
     EXPECT_EQ(2.f * 1.f, p->backward(0)->compute());
 }
 
+TEST(Algorithm_test, asin_backward_derivative)
+{
+    using namespace math::algorithms::derivatives::backward;
+    using namespace math::core::allocators;
+    using namespace math::core::pointers;
+
+    using Allocator = Malloc_allocator;
+    using D_node = Node<float, Allocator>;
+    using D_var = Var<float, Allocator>;
+    using D_const = Const<float, Allocator>;
+    using D_asin = Asin<float, Allocator>;
+
+    Shared_ptr<D_var, Allocator> v = Shared_ptr<D_var, Allocator>::make_shared(0, 1.f);
+
+    Shared_ptr<D_asin, Allocator> a = Shared_ptr<D_asin, Allocator>::make_shared(v);
+    EXPECT_EQ(std::asin(1.f), a->compute());
+    EXPECT_EQ(1.f * std::pow(1.f - std::pow(1.f, 2.f), -.5f), a->backward(0)->compute());
+}
+
+TEST(Algorithm_test, acos_backward_derivative)
+{
+    using namespace math::algorithms::derivatives::backward;
+    using namespace math::core::allocators;
+    using namespace math::core::pointers;
+
+    using Allocator = Malloc_allocator;
+    using D_node = Node<float, Allocator>;
+    using D_var = Var<float, Allocator>;
+    using D_const = Const<float, Allocator>;
+    using D_acos = Acos<float, Allocator>;
+
+    Shared_ptr<D_var, Allocator> v = Shared_ptr<D_var, Allocator>::make_shared(0, 1.f);
+
+    Shared_ptr<D_acos, Allocator> a = Shared_ptr<D_acos, Allocator>::make_shared(v);
+    EXPECT_EQ(std::acos(1.f), a->compute());
+    EXPECT_EQ(1.f * -std::pow(1.f - std::pow(1.f, 2.f), -.5f), a->backward(0)->compute());
+}
+
+TEST(Algorithm_test, atan_backward_derivative)
+{
+    using namespace math::algorithms::derivatives::backward;
+    using namespace math::core::allocators;
+    using namespace math::core::pointers;
+
+    using Allocator = Malloc_allocator;
+    using D_node = Node<float, Allocator>;
+    using D_var = Var<float, Allocator>;
+    using D_const = Const<float, Allocator>;
+    using D_atan = Atan<float, Allocator>;
+
+    Shared_ptr<D_var, Allocator> v = Shared_ptr<D_var, Allocator>::make_shared(0, 1.f);
+
+    Shared_ptr<D_atan, Allocator> a = Shared_ptr<D_atan, Allocator>::make_shared(v);
+    EXPECT_EQ(std::atan(1.f), a->compute());
+    EXPECT_EQ(1.f * std::pow(1.f + std::pow(1.f, 2.f), -1.f), a->backward(0)->compute());
+}
+
+TEST(Algorithm_test, acot_backward_derivative)
+{
+    using namespace math::algorithms::derivatives::backward;
+    using namespace math::core::allocators;
+    using namespace math::core::pointers;
+
+    using Allocator = Malloc_allocator;
+    using D_node = Node<float, Allocator>;
+    using D_var = Var<float, Allocator>;
+    using D_const = Const<float, Allocator>;
+    using D_acot = Acot<float, Allocator>;
+
+    Shared_ptr<D_var, Allocator> v = Shared_ptr<D_var, Allocator>::make_shared(0, 1.f);
+
+    Shared_ptr<D_acot, Allocator> a = Shared_ptr<D_acot, Allocator>::make_shared(v);
+    EXPECT_EQ(std::atan(1.f / 1.f), a->compute());
+    EXPECT_EQ(1.f * -std::pow(1.f + std::pow(1.f, 2.f), -1.f), a->backward(0)->compute());
+}
+
 TEST(Algorithms_test, can_perform_backward_derivation)
 {
     using namespace math::algorithms::derivatives::backward;
