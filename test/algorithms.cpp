@@ -391,21 +391,23 @@ TEST(Algorithms_test, can_perform_backward_derivation)
     using D_add = Add<float, Allocator>;
     using D_mul = Mul<float, Allocator>;
     using D_const = Const<float, Allocator>;
-    
-    // Z = X^2 + 3xy + 1
+    using D_sin = Sin<float, Allocator>;
+
+    // z = cos(x^2 + 3xy + 1)
     Shared_ptr<D_node, Allocator> x = Shared_ptr<D_var, Allocator>::make_shared(0, 3.0f);
     Shared_ptr<D_node, Allocator> y = Shared_ptr<D_var, Allocator>::make_shared(1, 2.0f);
-    Shared_ptr<D_node, Allocator> z = Shared_ptr<D_add, Allocator>::make_shared(
+    Shared_ptr<D_node, Allocator> z = Shared_ptr<D_sin, Allocator>::make_shared(
         Shared_ptr<D_add, Allocator>::make_shared(
-            Shared_ptr<D_mul, Allocator>::make_shared(x, x),
-            Shared_ptr<D_mul, Allocator>::make_shared(
-                Shared_ptr<D_const, Allocator>::make_shared(3.0),
-                Shared_ptr<D_mul, Allocator>::make_shared(x, y))),
-        Shared_ptr<D_const, Allocator>::make_shared(1.0));
+            Shared_ptr<D_add, Allocator>::make_shared(
+                Shared_ptr<D_mul, Allocator>::make_shared(x, x),
+                Shared_ptr<D_mul, Allocator>::make_shared(
+                    Shared_ptr<D_const, Allocator>::make_shared(3.0),
+                    Shared_ptr<D_mul, Allocator>::make_shared(x, y))),
+            Shared_ptr<D_const, Allocator>::make_shared(1.0)));
 
-    EXPECT_EQ(28.f, z->compute());
-    EXPECT_EQ(12.f, z->backward(0)->compute());
-    EXPECT_EQ(2.f, z->backward(0)->backward(0)->compute());
-    EXPECT_EQ(9.f, z->backward(1)->compute());
+    EXPECT_EQ(std::sin(28.f), z->compute());
+    EXPECT_EQ(12.f * std::cos(28.f), z->backward(0)->compute());
+    EXPECT_EQ(2.f * std::cos(28.f) - 12.f * 12.f * std::sin(28.f), z->backward(0)->backward(0)->compute());
+    EXPECT_EQ(9.f * std::cos(28.f), z->backward(1)->compute());
 }
 
