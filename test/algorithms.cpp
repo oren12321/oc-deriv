@@ -29,7 +29,6 @@ TEST(Algorithm_test, constant_backward_derivative)
     using namespace math::core::pointers;
 
     using Allocator = Malloc_allocator;
-    using D_node = Node<float, Allocator>;
     using D_const = Const<float, Allocator>;
 
     Shared_ptr<D_const, Allocator> c = Shared_ptr<D_const, Allocator>::make_shared(1.f);
@@ -45,7 +44,6 @@ TEST(Algorithm_test, variable_backward_derivative)
     using namespace math::core::pointers;
 
     using Allocator = Malloc_allocator;
-    using D_node = Node<float, Allocator>;
     using D_var = Var<float, Allocator>;
 
     Shared_ptr<D_var, Allocator> v = Shared_ptr<D_var, Allocator>::make_shared(0, 1.f);
@@ -61,7 +59,6 @@ TEST(Algorithm_test, addition_backward_derivative)
     using namespace math::core::pointers;
 
     using Allocator = Malloc_allocator;
-    using D_node = Node<float, Allocator>;
     using D_var = Var<float, Allocator>;
     using D_add = Add<float, Allocator>;
 
@@ -81,7 +78,6 @@ TEST(Algorithm_test, subtraction_backward_derivative)
     using namespace math::core::pointers;
 
     using Allocator = Malloc_allocator;
-    using D_node = Node<float, Allocator>;
     using D_var = Var<float, Allocator>;
     using D_sub = Sub<float, Allocator>;
 
@@ -101,7 +97,6 @@ TEST(Algorithm_test, negation_backward_derivative)
     using namespace math::core::pointers;
 
     using Allocator = Malloc_allocator;
-    using D_node = Node<float, Allocator>;
     using D_var = Var<float, Allocator>;
     using D_neg = Neg<float, Allocator>;
 
@@ -120,7 +115,6 @@ TEST(Algorithm_test, multiplication_backward_derivative)
     using namespace math::core::pointers;
 
     using Allocator = Malloc_allocator;
-    using D_node = Node<float, Allocator>;
     using D_var = Var<float, Allocator>;
     using D_mul = Mul<float, Allocator>;
 
@@ -140,7 +134,6 @@ TEST(Algorithm_test, division_backward_derivative)
     using namespace math::core::pointers;
 
     using Allocator = Malloc_allocator;
-    using D_node = Node<float, Allocator>;
     using D_var = Var<float, Allocator>;
     using D_div = Div<float, Allocator>;
 
@@ -160,7 +153,6 @@ TEST(Algorithm_test, sin_and_cos_backward_derivative)
     using namespace math::core::pointers;
 
     using Allocator = Malloc_allocator;
-    using D_node = Node<float, Allocator>;
     using D_var = Var<float, Allocator>;
     using D_sin = Sin<float, Allocator>;
     using D_cos = Cos<float, Allocator>;
@@ -183,7 +175,6 @@ TEST(Algorithm_test, tan_and_sec_backward_derivative)
     using namespace math::core::pointers;
 
     using Allocator = Malloc_allocator;
-    using D_node = Node<float, Allocator>;
     using D_var = Var<float, Allocator>;
     using D_tan = Tan<float, Allocator>;
     using D_sec = Sec<float, Allocator>;
@@ -206,7 +197,6 @@ TEST(Algorithm_test, cot_and_csc_backward_derivative)
     using namespace math::core::pointers;
 
     using Allocator = Malloc_allocator;
-    using D_node = Node<float, Allocator>;
     using D_var = Var<float, Allocator>;
     using D_cot = Cot<float, Allocator>;
     using D_csc = Csc<float, Allocator>;
@@ -229,7 +219,6 @@ TEST(Algorithm_test, exp_and_ln_backward_derivative)
     using namespace math::core::pointers;
 
     using Allocator = Malloc_allocator;
-    using D_node = Node<float, Allocator>;
     using D_var = Var<float, Allocator>;
     using D_exp = Exp<float, Allocator>;
     using D_ln = Ln<float, Allocator>;
@@ -252,9 +241,7 @@ TEST(Algorithm_test, pow_f_by_n_backward_derivative)
     using namespace math::core::pointers;
 
     using Allocator = Malloc_allocator;
-    using D_node = Node<float, Allocator>;
     using D_var = Var<float, Allocator>;
-    using D_const = Const<float, Allocator>;
     using D_pow = Pow_fn<float, Allocator>;
 
     Shared_ptr<D_var, Allocator> v = Shared_ptr<D_var, Allocator>::make_shared(0, 1.f);
@@ -271,9 +258,7 @@ TEST(Algorithm_test, pow_a_by_f_backward_derivative)
     using namespace math::core::pointers;
 
     using Allocator = Malloc_allocator;
-    using D_node = Node<float, Allocator>;
     using D_var = Var<float, Allocator>;
-    using D_const = Const<float, Allocator>;
     using D_pow = Pow_af<float, Allocator>;
 
     Shared_ptr<D_var, Allocator> v = Shared_ptr<D_var, Allocator>::make_shared(0, 1.f);
@@ -290,7 +275,6 @@ TEST(Algorithm_test, pow_f_by_g_backward_derivative)
     using namespace math::core::pointers;
 
     using Allocator = Malloc_allocator;
-    using D_node = Node<float, Allocator>;
     using D_var = Var<float, Allocator>;
     using D_const = Const<float, Allocator>;
     using D_pow = Pow_fg<float, Allocator>;
@@ -310,9 +294,7 @@ TEST(Algorithm_test, asin_backward_derivative)
     using namespace math::core::pointers;
 
     using Allocator = Malloc_allocator;
-    using D_node = Node<float, Allocator>;
     using D_var = Var<float, Allocator>;
-    using D_const = Const<float, Allocator>;
     using D_asin = Asin<float, Allocator>;
 
     Shared_ptr<D_var, Allocator> v = Shared_ptr<D_var, Allocator>::make_shared(0, 1.f);
@@ -329,9 +311,7 @@ TEST(Algorithm_test, acos_backward_derivative)
     using namespace math::core::pointers;
 
     using Allocator = Malloc_allocator;
-    using D_node = Node<float, Allocator>;
     using D_var = Var<float, Allocator>;
-    using D_const = Const<float, Allocator>;
     using D_acos = Acos<float, Allocator>;
 
     Shared_ptr<D_var, Allocator> v = Shared_ptr<D_var, Allocator>::make_shared(0, 1.f);
@@ -348,9 +328,7 @@ TEST(Algorithm_test, atan_backward_derivative)
     using namespace math::core::pointers;
 
     using Allocator = Malloc_allocator;
-    using D_node = Node<float, Allocator>;
     using D_var = Var<float, Allocator>;
-    using D_const = Const<float, Allocator>;
     using D_atan = Atan<float, Allocator>;
 
     Shared_ptr<D_var, Allocator> v = Shared_ptr<D_var, Allocator>::make_shared(0, 1.f);
@@ -367,9 +345,7 @@ TEST(Algorithm_test, acot_backward_derivative)
     using namespace math::core::pointers;
 
     using Allocator = Malloc_allocator;
-    using D_node = Node<float, Allocator>;
     using D_var = Var<float, Allocator>;
-    using D_const = Const<float, Allocator>;
     using D_acot = Acot<float, Allocator>;
 
     Shared_ptr<D_var, Allocator> v = Shared_ptr<D_var, Allocator>::make_shared(0, 1.f);
@@ -393,7 +369,7 @@ TEST(Algorithms_test, can_perform_backward_derivation)
     using D_const = Const<float, Allocator>;
     using D_sin = Sin<float, Allocator>;
 
-    // z = cos(x^2 + 3xy + 1)
+    // z = sin(x^2 + 3xy + 1)
     Shared_ptr<D_node, Allocator> x = Shared_ptr<D_var, Allocator>::make_shared(0, 3.0f);
     Shared_ptr<D_node, Allocator> y = Shared_ptr<D_var, Allocator>::make_shared(1, 2.0f);
     Shared_ptr<D_node, Allocator> z = Shared_ptr<D_sin, Allocator>::make_shared(

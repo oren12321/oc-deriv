@@ -187,6 +187,9 @@ namespace math::algorithms::derivatives::backward {
     };
 
     template <Decimal F, math::core::allocators::Allocator Internal_allocator>
+    class Cos;
+
+    template <Decimal F, math::core::allocators::Allocator Internal_allocator>
     class Sin : public Node<F, Internal_allocator> {
     public:
         Sin(const math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
@@ -230,6 +233,9 @@ namespace math::algorithms::derivatives::backward {
     private:
         math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
     };
+
+    template <Decimal F, math::core::allocators::Allocator Internal_allocator>
+    class Sec;
 
     template <Decimal F, math::core::allocators::Allocator Internal_allocator>
     class Tan : public Node<F, Internal_allocator> {
@@ -281,6 +287,9 @@ namespace math::algorithms::derivatives::backward {
     private:
         math::core::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
     };
+
+    template <Decimal F, math::core::allocators::Allocator Internal_allocator>
+    class Csc;
 
     template <Decimal F, math::core::allocators::Allocator Internal_allocator>
     class Cot : public Node<F, Internal_allocator> {
