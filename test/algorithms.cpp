@@ -50,6 +50,11 @@ TEST(Algorithm_test, variable_backward_derivative)
 
     EXPECT_EQ(1.f, v->compute());
     EXPECT_EQ(1.f, v->backward(0)->compute());
+
+    v->set(2.f);
+
+    EXPECT_EQ(2.f, v->compute());
+    EXPECT_EQ(1.f, v->backward(0)->compute());
 }
 
 TEST(Algorithm_test, addition_backward_derivative)

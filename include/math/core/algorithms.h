@@ -55,8 +55,13 @@ namespace math::algorithms::derivatives::backward {
     template <Decimal F, math::core::allocators::Allocator Internal_allocator>
     class Var : public Node<F, Internal_allocator> {
     public:
-        Var(std::size_t id, F value)
+        explicit Var(std::size_t id, F value = F{ 0 })
             : id_(id), value_(value) {}
+
+        void set(F value)
+        {
+            value_ = value;
+        }
 
         F compute() const override
         {
