@@ -6,9 +6,9 @@
 #include <limits>
 #include <stdexcept>
 
-#include <math/core/allocators.h>
-#include <math/core/pointers.h>
-#include <math/core/utils.h>
+#include <computoc/allocators.h>
+#include <computoc/pointers.h>
+#include <computoc/utils.h>
 
 namespace math::algorithms {
     template <typename T>

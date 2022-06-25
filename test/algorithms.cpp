@@ -3,9 +3,9 @@
 #include <memory>
 #include <cmath>
 
-#include <math/core/algorithms.h>
-#include <math/core/allocators.h>
-#include <math/core/pointers.h>
+#include <computoc/algorithms.h>
+#include <computoc/allocators.h>
+#include <computoc/pointers.h>
 
 TEST(Algorithms_test, two_numbers_can_be_compared_with_specified_percision)
 {
