@@ -9,7 +9,7 @@
 
 TEST(Algorithms_test, two_numbers_can_be_compared_with_specified_percision)
 {
-    using namespace math::algorithms;
+    using namespace computoc::algorithms;
 
     int a = 0;
     int b = 1;
@@ -24,7 +24,7 @@ TEST(Algorithms_test, two_numbers_can_be_compared_with_specified_percision)
 
 TEST(Algorithm_test, constant_backward_derivative)
 {
-    using namespace math::algorithms::derivatives::backward;
+    using namespace computoc::algorithms::derivatives;
     using namespace memoc::allocators;
     using namespace memoc::pointers;
 
@@ -39,7 +39,7 @@ TEST(Algorithm_test, constant_backward_derivative)
 
 TEST(Algorithm_test, variable_backward_derivative)
 {
-    using namespace math::algorithms::derivatives::backward;
+    using namespace computoc::algorithms::derivatives;
     using namespace memoc::allocators;
     using namespace memoc::pointers;
 
@@ -59,7 +59,7 @@ TEST(Algorithm_test, variable_backward_derivative)
 
 TEST(Algorithm_test, addition_backward_derivative)
 {
-    using namespace math::algorithms::derivatives::backward;
+    using namespace computoc::algorithms::derivatives;
     using namespace memoc::allocators;
     using namespace memoc::pointers;
 
@@ -78,7 +78,7 @@ TEST(Algorithm_test, addition_backward_derivative)
 
 TEST(Algorithm_test, subtraction_backward_derivative)
 {
-    using namespace math::algorithms::derivatives::backward;
+    using namespace computoc::algorithms::derivatives;
     using namespace memoc::allocators;
     using namespace memoc::pointers;
 
@@ -97,7 +97,7 @@ TEST(Algorithm_test, subtraction_backward_derivative)
 
 TEST(Algorithm_test, negation_backward_derivative)
 {
-    using namespace math::algorithms::derivatives::backward;
+    using namespace computoc::algorithms::derivatives;
     using namespace memoc::allocators;
     using namespace memoc::pointers;
 
@@ -115,7 +115,7 @@ TEST(Algorithm_test, negation_backward_derivative)
 
 TEST(Algorithm_test, multiplication_backward_derivative)
 {
-    using namespace math::algorithms::derivatives::backward;
+    using namespace computoc::algorithms::derivatives;
     using namespace memoc::allocators;
     using namespace memoc::pointers;
 
@@ -134,7 +134,7 @@ TEST(Algorithm_test, multiplication_backward_derivative)
 
 TEST(Algorithm_test, division_backward_derivative)
 {
-    using namespace math::algorithms::derivatives::backward;
+    using namespace computoc::algorithms::derivatives;
     using namespace memoc::allocators;
     using namespace memoc::pointers;
 
@@ -153,7 +153,7 @@ TEST(Algorithm_test, division_backward_derivative)
 
 TEST(Algorithm_test, sin_and_cos_backward_derivative)
 {
-    using namespace math::algorithms::derivatives::backward;
+    using namespace computoc::algorithms::derivatives;
     using namespace memoc::allocators;
     using namespace memoc::pointers;
 
@@ -175,7 +175,7 @@ TEST(Algorithm_test, sin_and_cos_backward_derivative)
 
 TEST(Algorithm_test, tan_and_sec_backward_derivative)
 {
-    using namespace math::algorithms::derivatives::backward;
+    using namespace computoc::algorithms::derivatives;
     using namespace memoc::allocators;
     using namespace memoc::pointers;
 
@@ -197,7 +197,7 @@ TEST(Algorithm_test, tan_and_sec_backward_derivative)
 
 TEST(Algorithm_test, cot_and_csc_backward_derivative)
 {
-    using namespace math::algorithms::derivatives::backward;
+    using namespace computoc::algorithms::derivatives;
     using namespace memoc::allocators;
     using namespace memoc::pointers;
 
@@ -219,7 +219,7 @@ TEST(Algorithm_test, cot_and_csc_backward_derivative)
 
 TEST(Algorithm_test, exp_and_ln_backward_derivative)
 {
-    using namespace math::algorithms::derivatives::backward;
+    using namespace computoc::algorithms::derivatives;
     using namespace memoc::allocators;
     using namespace memoc::pointers;
 
@@ -241,7 +241,7 @@ TEST(Algorithm_test, exp_and_ln_backward_derivative)
 
 TEST(Algorithm_test, pow_f_by_n_backward_derivative)
 {
-    using namespace math::algorithms::derivatives::backward;
+    using namespace computoc::algorithms::derivatives;
     using namespace memoc::allocators;
     using namespace memoc::pointers;
 
@@ -258,7 +258,7 @@ TEST(Algorithm_test, pow_f_by_n_backward_derivative)
 
 TEST(Algorithm_test, pow_a_by_f_backward_derivative)
 {
-    using namespace math::algorithms::derivatives::backward;
+    using namespace computoc::algorithms::derivatives;
     using namespace memoc::allocators;
     using namespace memoc::pointers;
 
@@ -275,7 +275,7 @@ TEST(Algorithm_test, pow_a_by_f_backward_derivative)
 
 TEST(Algorithm_test, pow_f_by_g_backward_derivative)
 {
-    using namespace math::algorithms::derivatives::backward;
+    using namespace computoc::algorithms::derivatives;
     using namespace memoc::allocators;
     using namespace memoc::pointers;
 
@@ -294,7 +294,7 @@ TEST(Algorithm_test, pow_f_by_g_backward_derivative)
 
 TEST(Algorithm_test, asin_backward_derivative)
 {
-    using namespace math::algorithms::derivatives::backward;
+    using namespace computoc::algorithms::derivatives;
     using namespace memoc::allocators;
     using namespace memoc::pointers;
 
@@ -311,7 +311,7 @@ TEST(Algorithm_test, asin_backward_derivative)
 
 TEST(Algorithm_test, acos_backward_derivative)
 {
-    using namespace math::algorithms::derivatives::backward;
+    using namespace computoc::algorithms::derivatives;
     using namespace memoc::allocators;
     using namespace memoc::pointers;
 
@@ -328,7 +328,7 @@ TEST(Algorithm_test, acos_backward_derivative)
 
 TEST(Algorithm_test, atan_backward_derivative)
 {
-    using namespace math::algorithms::derivatives::backward;
+    using namespace computoc::algorithms::derivatives;
     using namespace memoc::allocators;
     using namespace memoc::pointers;
 
@@ -345,7 +345,7 @@ TEST(Algorithm_test, atan_backward_derivative)
 
 TEST(Algorithm_test, acot_backward_derivative)
 {
-    using namespace math::algorithms::derivatives::backward;
+    using namespace computoc::algorithms::derivatives;
     using namespace memoc::allocators;
     using namespace memoc::pointers;
 
@@ -362,7 +362,7 @@ TEST(Algorithm_test, acot_backward_derivative)
 
 TEST(Algorithms_test, can_perform_backward_derivation)
 {
-    using namespace math::algorithms::derivatives::backward;
+    using namespace computoc::algorithms::derivatives;
     using namespace memoc::allocators;
     using namespace memoc::pointers;
 
