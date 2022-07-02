@@ -1,5 +1,5 @@
-#ifndef MATH_ALGORITHMS_H
-#define MATH_ALGORITHMS_H
+#ifndef COMPUTOC_ALGORITHMS_H
+#define COMPUTOC_ALGORITHMS_H
 
 #include <type_traits>
 #include <cmath>
@@ -618,4 +618,4 @@ namespace computoc::algorithms::derivatives {
     using details::Var;
 }
 
-#endif // MATH_ALGORITHMS_H
+#endif // COMPUTOC_ALGORITHMS_H
