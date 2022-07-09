@@ -6,7 +6,7 @@
 #include <computoc/algorithms.h>
 #include <memoc/allocators.h>
 #include <memoc/pointers.h>
-#include <computoc/complex.h>
+//#include <computoc/complex.h>
 
 TEST(Algorithms_test, two_numbers_can_be_compared_with_specified_percision)
 {
