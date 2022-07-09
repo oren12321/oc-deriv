@@ -3,22 +3,20 @@
 
 #include <type_traits>
 #include <cmath>
-#include <limits>
 #include <stdexcept>
 
 #include <memoc/allocators.h>
 #include <memoc/pointers.h>
 #include <computoc/errors.h>
+#include <computoc/concepts.h>
+#include <computoc/math.h>
 
 namespace computoc::algorithms {
     namespace details {
-        template <typename T>
-        concept Arithmetic = std::is_arithmetic_v<T>;
-
-        template <Arithmetic T>
-        bool is_equal(T a, T b, T epsilon = std::sqrt(std::numeric_limits<T>::epsilon()))
+        template <concepts::Arithmetic T>
+        bool is_equal(T a, T b, T eps = sqrt(epsilon<T>()))
         {
-            return std::abs(a - b) <= epsilon;
+            return abs(a - b) <= eps;
         }
     }
 
@@ -27,17 +25,14 @@ namespace computoc::algorithms {
 
 namespace computoc::algorithms::derivatives {
     namespace details {
-        template <typename T>
-        concept Decimal = std::is_floating_point_v<T>;
-
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         struct Node {
             virtual ~Node() {}
             virtual F compute() const = 0;
             virtual memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const = 0;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Const : public Node<F, Internal_allocator> {
         public:
             Const(F value)
@@ -57,7 +52,7 @@ namespace computoc::algorithms::derivatives {
             F value_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Var : public Node<F, Internal_allocator> {
         public:
             explicit Var(std::size_t id, F value = F{ 0 })
@@ -85,7 +80,7 @@ namespace computoc::algorithms::derivatives {
             double value_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Add : public Node<F, Internal_allocator> {
         public:
             Add(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
@@ -106,7 +101,7 @@ namespace computoc::algorithms::derivatives {
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Sub : public Node<F, Internal_allocator> {
         public:
             Sub(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
@@ -127,7 +122,7 @@ namespace computoc::algorithms::derivatives {
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Neg : public Node<F, Internal_allocator> {
         public:
             Neg(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
@@ -147,7 +142,7 @@ namespace computoc::algorithms::derivatives {
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Mul : public Node<F, Internal_allocator> {
         public:
             Mul(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
@@ -169,7 +164,7 @@ namespace computoc::algorithms::derivatives {
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Div : public Node<F, Internal_allocator> {
         public:
             Div(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
@@ -196,10 +191,10 @@ namespace computoc::algorithms::derivatives {
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Cos;
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Sin : public Node<F, Internal_allocator> {
         public:
             Sin(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
@@ -221,7 +216,7 @@ namespace computoc::algorithms::derivatives {
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Cos : public Node<F, Internal_allocator> {
         public:
             Cos(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
@@ -244,10 +239,10 @@ namespace computoc::algorithms::derivatives {
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Sec;
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Tan : public Node<F, Internal_allocator> {
         public:
             Tan(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
@@ -271,7 +266,7 @@ namespace computoc::algorithms::derivatives {
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Sec : public Node<F, Internal_allocator> {
         public:
             Sec(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
@@ -298,10 +293,10 @@ namespace computoc::algorithms::derivatives {
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Csc;
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Cot : public Node<F, Internal_allocator> {
         public:
             Cot(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
@@ -329,7 +324,7 @@ namespace computoc::algorithms::derivatives {
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Csc : public Node<F, Internal_allocator> {
         public:
             Csc(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
@@ -357,7 +352,7 @@ namespace computoc::algorithms::derivatives {
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Exp : public Node<F, Internal_allocator> {
         public:
             Exp(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
@@ -379,7 +374,7 @@ namespace computoc::algorithms::derivatives {
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Ln : public Node<F, Internal_allocator> {
         public:
             Ln(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
@@ -404,7 +399,7 @@ namespace computoc::algorithms::derivatives {
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Pow_fn : public Node<F, Internal_allocator> {
         public:
             Pow_fn(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& f, F n)
@@ -429,7 +424,7 @@ namespace computoc::algorithms::derivatives {
             F n_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Pow_af : public Node<F, Internal_allocator> {
         public:
             Pow_af(F a, const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& f)
@@ -454,7 +449,7 @@ namespace computoc::algorithms::derivatives {
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> f_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Pow_fg : public Node<F, Internal_allocator> {
         public:
             Pow_fg(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
@@ -483,7 +478,7 @@ namespace computoc::algorithms::derivatives {
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Asin : public Node<F, Internal_allocator> {
         public:
             Asin(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
@@ -509,7 +504,7 @@ namespace computoc::algorithms::derivatives {
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Acos : public Node<F, Internal_allocator> {
         public:
             Acos(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
@@ -536,7 +531,7 @@ namespace computoc::algorithms::derivatives {
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Atan : public Node<F, Internal_allocator> {
         public:
             Atan(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
@@ -562,7 +557,7 @@ namespace computoc::algorithms::derivatives {
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
-        template <Decimal F, memoc::allocators::Allocator Internal_allocator>
+        template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
         class Acot : public Node<F, Internal_allocator> {
         public:
             Acot(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
