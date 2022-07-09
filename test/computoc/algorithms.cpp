@@ -6,6 +6,7 @@
 #include <computoc/algorithms.h>
 #include <memoc/allocators.h>
 #include <memoc/pointers.h>
+#include <computoc/complex.h>
 
 TEST(Algorithms_test, two_numbers_can_be_compared_with_specified_percision)
 {
@@ -171,6 +172,17 @@ TEST(Algorithm_test, sin_and_cos_backward_derivative)
     Shared_ptr<D_cos, Allocator> c = make_shared<D_cos, Allocator>(v);
     EXPECT_EQ(std::cos(1.f), c->compute());
     EXPECT_EQ(1.f * (-std::sin(1.f)), c->backward(0)->compute());
+
+    //using namespace computoc::types;
+
+    //using C_var = Var<Complex<float>, Allocator>;
+    //using C_sin = Sin<Complex<float>, Allocator>;
+
+    //Shared_ptr<C_var, Allocator> cv = make_shared<C_var, Allocator>(0, Complex{ 1.f, 2.f });
+
+    //Shared_ptr<C_sin, Allocator> cs = make_shared<C_sin, Allocator>(cv);
+    //EXPECT_EQ(sin(Complex{ 1.f, 2.f }), cs->compute());
+    //EXPECT_EQ(1.f *cos(Complex{ 1.f, 2.f }), cs->backward(0)->compute());
 }
 
 TEST(Algorithm_test, tan_and_sec_backward_derivative)

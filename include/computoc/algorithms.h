@@ -77,7 +77,7 @@ namespace computoc::algorithms::derivatives {
 
         private:
             std::size_t id_;
-            double value_;
+            F value_;
         };
 
         template <concepts::Arithmetic F, memoc::allocators::Allocator Internal_allocator>
@@ -173,7 +173,7 @@ namespace computoc::algorithms::derivatives {
             F compute() const override
             {
                 F n2_value{ n2_->compute() };
-                COMPUTOC_THROW_IF_FALSE(n2_value != 0, std::overflow_error, "division by zero");
+                COMPUTOC_THROW_IF_FALSE(n2_value != F{}, std::overflow_error, "division by zero");
 
                 return n1_->compute() / n2_value;
             }
@@ -202,7 +202,7 @@ namespace computoc::algorithms::derivatives {
 
             F compute() const override
             {
-                return std::sin(n_->compute());
+                return sin(n_->compute());
             }
 
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
@@ -224,7 +224,7 @@ namespace computoc::algorithms::derivatives {
 
             F compute() const override
             {
-                return std::cos(n_->compute());
+                return cos(n_->compute());
             }
 
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
@@ -250,7 +250,7 @@ namespace computoc::algorithms::derivatives {
 
             F compute() const override
             {
-                return std::tan(n_->compute());
+                return tan(n_->compute());
             }
 
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
@@ -274,8 +274,8 @@ namespace computoc::algorithms::derivatives {
 
             F compute() const override
             {
-                F d{ std::cos(n_->compute()) };
-                COMPUTOC_THROW_IF_FALSE(d != 0, std::overflow_error, "division by zero");
+                F d{ cos(n_->compute()) };
+                COMPUTOC_THROW_IF_FALSE(d != F{}, std::overflow_error, "division by zero");
 
                 return F{ 1 } / d;
             }
@@ -304,8 +304,8 @@ namespace computoc::algorithms::derivatives {
 
             F compute() const override
             {
-                F d{ std::tan(n_->compute()) };
-                COMPUTOC_THROW_IF_FALSE(d != 0, std::overflow_error, "division by zero");
+                F d{ tan(n_->compute()) };
+                COMPUTOC_THROW_IF_FALSE(d != F{}, std::overflow_error, "division by zero");
 
                 return F{ 1 } / d;
             }
@@ -332,8 +332,8 @@ namespace computoc::algorithms::derivatives {
 
             F compute() const override
             {
-                F d{ std::sin(n_->compute()) };
-                COMPUTOC_THROW_IF_FALSE(d != 0, std::overflow_error, "division by zero");
+                F d{ sin(n_->compute()) };
+                COMPUTOC_THROW_IF_FALSE(d != F{}, std::overflow_error, "division by zero");
 
                 return F{ 1 } / d;
             }
@@ -360,7 +360,7 @@ namespace computoc::algorithms::derivatives {
 
             F compute() const override
             {
-                return std::exp(n_->compute());
+                return exp(n_->compute());
             }
 
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
@@ -383,9 +383,9 @@ namespace computoc::algorithms::derivatives {
             F compute() const override
             {
                 F d{ n_->compute() };
-                COMPUTOC_THROW_IF_FALSE(d > F{ 0 }, std::overflow_error, "log of non-positive number");
+                COMPUTOC_THROW_IF_FALSE(d > F{}, std::overflow_error, "log of non-positive number");
 
-                return std::log(d);
+                return log(d);
             }
 
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
@@ -407,7 +407,7 @@ namespace computoc::algorithms::derivatives {
 
             F compute() const override
             {
-                return std::pow(f_->compute(), n_);
+                return pow(f_->compute(), n_);
             }
 
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
@@ -432,7 +432,7 @@ namespace computoc::algorithms::derivatives {
 
             F compute() const override
             {
-                return std::pow(a_, f_->compute());
+                return pow(a_, f_->compute());
             }
 
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
@@ -441,7 +441,7 @@ namespace computoc::algorithms::derivatives {
                     f_->backward(id),
                     memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                         memoc::pointers::make_shared<Pow_af<F, Internal_allocator>, Internal_allocator>(a_, f_),
-                        memoc::pointers::make_shared<Const<F, Internal_allocator>, Internal_allocator>(std::log(a_))));
+                        memoc::pointers::make_shared<Const<F, Internal_allocator>, Internal_allocator>(log(a_))));
             }
 
         private:
@@ -457,7 +457,7 @@ namespace computoc::algorithms::derivatives {
 
             F compute() const override
             {
-                return std::pow(n1_->compute(), n2_->compute());
+                return pow(n1_->compute(), n2_->compute());
             }
 
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
@@ -486,7 +486,7 @@ namespace computoc::algorithms::derivatives {
 
             F compute() const override
             {
-                return std::asin(n_->compute());
+                return asin(n_->compute());
             }
 
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
@@ -512,7 +512,7 @@ namespace computoc::algorithms::derivatives {
 
             F compute() const override
             {
-                return std::acos(n_->compute());
+                return acos(n_->compute());
             }
 
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
@@ -539,7 +539,7 @@ namespace computoc::algorithms::derivatives {
 
             F compute() const override
             {
-                return std::atan(n_->compute());
+                return atan(n_->compute());
             }
 
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
@@ -566,9 +566,9 @@ namespace computoc::algorithms::derivatives {
             F compute() const override
             {
                 F d{ n_->compute() };
-                COMPUTOC_THROW_IF_FALSE(d != 0, std::overflow_error, "division by zero");
+                COMPUTOC_THROW_IF_FALSE(d != F{}, std::overflow_error, "division by zero");
 
-                return std::atan(d / n_->compute());
+                return atan(d / n_->compute());
             }
 
             memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
