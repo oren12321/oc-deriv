@@ -165,7 +165,7 @@ TEST(Algorithm_test, sin_and_cos_backward_derivative)
     EXPECT_EQ(std::cos(1.f), c->compute());
     EXPECT_EQ(1.f * (-std::sin(1.f)), c->backward(0)->compute());
 
-    //using namespace computoc::types;
+    //using namespace computoc;
 
     //using C_var = Var<Complex<float>, Allocator>;
     //using C_sin = Sin<Complex<float>, Allocator>;
