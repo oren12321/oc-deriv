@@ -29,7 +29,7 @@ namespace computoc::algorithms::derivatives {
         struct Node {
             virtual ~Node() {}
             virtual F compute() const = 0;
-            virtual memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const = 0;
+            virtual memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const = 0;
         };
 
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
@@ -43,9 +43,9 @@ namespace computoc::algorithms::derivatives {
                 return value_;
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Const<F, Internal_allocator>, Internal_allocator>(F{ 0 });
+                return memoc::make_shared<Const<F, Internal_allocator>, Internal_allocator>(F{ 0 });
             }
 
         private:
@@ -68,11 +68,11 @@ namespace computoc::algorithms::derivatives {
                 return value_;
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
                 return id_ == id ?
-                    memoc::pointers::make_shared<Const<F, Internal_allocator>, Internal_allocator>(F{ 1 }) :
-                    memoc::pointers::make_shared<Const<F, Internal_allocator>, Internal_allocator>(F{ 0 });
+                    memoc::make_shared<Const<F, Internal_allocator>, Internal_allocator>(F{ 1 }) :
+                    memoc::make_shared<Const<F, Internal_allocator>, Internal_allocator>(F{ 0 });
             }
 
         private:
@@ -83,7 +83,7 @@ namespace computoc::algorithms::derivatives {
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
         class Add : public Node<F, Internal_allocator> {
         public:
-            Add(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+            Add(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
                 : n1_(n1), n2_(n2) {}
 
             F compute() const override
@@ -91,20 +91,20 @@ namespace computoc::algorithms::derivatives {
                 return n1_->compute() + n2_->compute();
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Add<F, Internal_allocator>, Internal_allocator>(n1_->backward(id), n2_->backward(id));
+                return memoc::make_shared<Add<F, Internal_allocator>, Internal_allocator>(n1_->backward(id), n2_->backward(id));
             }
 
         private:
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n1_;
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n1_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
         };
 
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
         class Sub : public Node<F, Internal_allocator> {
         public:
-            Sub(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+            Sub(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
                 : n1_(n1), n2_(n2) {}
 
             F compute() const override
@@ -112,20 +112,20 @@ namespace computoc::algorithms::derivatives {
                 return n1_->compute() - n2_->compute();
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Sub<F, Internal_allocator>, Internal_allocator>(n1_->backward(id), n2_->backward(id));
+                return memoc::make_shared<Sub<F, Internal_allocator>, Internal_allocator>(n1_->backward(id), n2_->backward(id));
             }
 
         private:
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n1_;
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n1_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
         };
 
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
         class Neg : public Node<F, Internal_allocator> {
         public:
-            Neg(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+            Neg(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
                 : n_(n) {}
 
             F compute() const override
@@ -133,19 +133,19 @@ namespace computoc::algorithms::derivatives {
                 return -n_->compute();
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Neg<F, Internal_allocator>, Internal_allocator>(n_->backward(id));
+                return memoc::make_shared<Neg<F, Internal_allocator>, Internal_allocator>(n_->backward(id));
             }
 
         private:
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
         class Mul : public Node<F, Internal_allocator> {
         public:
-            Mul(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+            Mul(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
                 : n1_(n1), n2_(n2) {}
 
             F compute() const override
@@ -153,21 +153,21 @@ namespace computoc::algorithms::derivatives {
                 return n1_->compute() * n2_->compute();
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Add<F, Internal_allocator>, Internal_allocator>(
-                    memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(n1_->backward(id), n2_),
-                    memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(n1_, n2_->backward(id)));
+                return memoc::make_shared<Add<F, Internal_allocator>, Internal_allocator>(
+                    memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(n1_->backward(id), n2_),
+                    memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(n1_, n2_->backward(id)));
             }
         private:
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n1_;
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n1_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
         };
 
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
         class Div : public Node<F, Internal_allocator> {
         public:
-            Div(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+            Div(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
                 : n1_(n1), n2_(n2) {}
 
             F compute() const override
@@ -178,17 +178,17 @@ namespace computoc::algorithms::derivatives {
                 return n1_->compute() / n2_value;
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Div<F, Internal_allocator>, Internal_allocator>(
-                    memoc::pointers::make_shared<Sub<F, Internal_allocator>, Internal_allocator>(
-                        memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(n1_->backward(id), n2_),
-                        memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(n1_, n2_->backward(id))),
-                    memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(n2_, n2_));
+                return memoc::make_shared<Div<F, Internal_allocator>, Internal_allocator>(
+                    memoc::make_shared<Sub<F, Internal_allocator>, Internal_allocator>(
+                        memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(n1_->backward(id), n2_),
+                        memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(n1_, n2_->backward(id))),
+                    memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(n2_, n2_));
             }
         private:
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n1_;
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n1_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
         };
 
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
@@ -197,7 +197,7 @@ namespace computoc::algorithms::derivatives {
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
         class Sin : public Node<F, Internal_allocator> {
         public:
-            Sin(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+            Sin(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
                 : n_(n) {}
 
             F compute() const override
@@ -205,21 +205,21 @@ namespace computoc::algorithms::derivatives {
                 return sin(n_->compute());
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
-                    memoc::pointers::make_shared<Cos<F, Internal_allocator>, Internal_allocator>(n_));
+                    memoc::make_shared<Cos<F, Internal_allocator>, Internal_allocator>(n_));
             }
 
         private:
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
         class Cos : public Node<F, Internal_allocator> {
         public:
-            Cos(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
+            Cos(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
                 : n_(v) {}
 
             F compute() const override
@@ -227,16 +227,16 @@ namespace computoc::algorithms::derivatives {
                 return cos(n_->compute());
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
-                    memoc::pointers::make_shared<Neg<F, Internal_allocator>, Internal_allocator>(
-                        memoc::pointers::make_shared<Sin<F, Internal_allocator>, Internal_allocator>(n_)));
+                    memoc::make_shared<Neg<F, Internal_allocator>, Internal_allocator>(
+                        memoc::make_shared<Sin<F, Internal_allocator>, Internal_allocator>(n_)));
             }
 
         private:
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
@@ -245,7 +245,7 @@ namespace computoc::algorithms::derivatives {
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
         class Tan : public Node<F, Internal_allocator> {
         public:
-            Tan(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
+            Tan(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
                 : n_(v) {}
 
             F compute() const override
@@ -253,23 +253,23 @@ namespace computoc::algorithms::derivatives {
                 return tan(n_->compute());
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
-                    memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
-                        memoc::pointers::make_shared<Sec<F, Internal_allocator>, Internal_allocator>(n_),
-                        memoc::pointers::make_shared<Sec<F, Internal_allocator>, Internal_allocator>(n_)));
+                    memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                        memoc::make_shared<Sec<F, Internal_allocator>, Internal_allocator>(n_),
+                        memoc::make_shared<Sec<F, Internal_allocator>, Internal_allocator>(n_)));
             }
 
         private:
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
         class Sec : public Node<F, Internal_allocator> {
         public:
-            Sec(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
+            Sec(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
                 : n_(v) {}
 
             F compute() const override
@@ -280,17 +280,17 @@ namespace computoc::algorithms::derivatives {
                 return F{ 1 } / d;
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
-                    memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
-                        memoc::pointers::make_shared<Sec<F, Internal_allocator>, Internal_allocator>(n_),
-                        memoc::pointers::make_shared<Tan<F, Internal_allocator>, Internal_allocator>(n_)));
+                    memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                        memoc::make_shared<Sec<F, Internal_allocator>, Internal_allocator>(n_),
+                        memoc::make_shared<Tan<F, Internal_allocator>, Internal_allocator>(n_)));
             }
 
         private:
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
@@ -299,7 +299,7 @@ namespace computoc::algorithms::derivatives {
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
         class Cot : public Node<F, Internal_allocator> {
         public:
-            Cot(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
+            Cot(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
                 : n_(v) {}
 
             F compute() const override
@@ -310,24 +310,24 @@ namespace computoc::algorithms::derivatives {
                 return F{ 1 } / d;
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
-                    memoc::pointers::make_shared<Neg<F, Internal_allocator>, Internal_allocator>(
-                        memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
-                            memoc::pointers::make_shared<Csc<F, Internal_allocator>, Internal_allocator>(n_),
-                            memoc::pointers::make_shared<Csc<F, Internal_allocator>, Internal_allocator>(n_))));
+                    memoc::make_shared<Neg<F, Internal_allocator>, Internal_allocator>(
+                        memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                            memoc::make_shared<Csc<F, Internal_allocator>, Internal_allocator>(n_),
+                            memoc::make_shared<Csc<F, Internal_allocator>, Internal_allocator>(n_))));
             }
 
         private:
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
         class Csc : public Node<F, Internal_allocator> {
         public:
-            Csc(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
+            Csc(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
                 : n_(v) {}
 
             F compute() const override
@@ -338,24 +338,24 @@ namespace computoc::algorithms::derivatives {
                 return F{ 1 } / d;
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
-                    memoc::pointers::make_shared<Neg<F, Internal_allocator>, Internal_allocator>(
-                        memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
-                            memoc::pointers::make_shared<Csc<F, Internal_allocator>, Internal_allocator>(n_),
-                            memoc::pointers::make_shared<Cot<F, Internal_allocator>, Internal_allocator>(n_))));
+                    memoc::make_shared<Neg<F, Internal_allocator>, Internal_allocator>(
+                        memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                            memoc::make_shared<Csc<F, Internal_allocator>, Internal_allocator>(n_),
+                            memoc::make_shared<Cot<F, Internal_allocator>, Internal_allocator>(n_))));
             }
 
         private:
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
         class Exp : public Node<F, Internal_allocator> {
         public:
-            Exp(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
+            Exp(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
                 : n_(v) {}
 
             F compute() const override
@@ -363,21 +363,21 @@ namespace computoc::algorithms::derivatives {
                 return exp(n_->compute());
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
-                    memoc::pointers::make_shared<Exp<F, Internal_allocator>, Internal_allocator>(n_));
+                    memoc::make_shared<Exp<F, Internal_allocator>, Internal_allocator>(n_));
             }
 
         private:
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
         class Ln : public Node<F, Internal_allocator> {
         public:
-            Ln(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
+            Ln(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& v)
                 : n_(v) {}
 
             F compute() const override
@@ -388,21 +388,21 @@ namespace computoc::algorithms::derivatives {
                 return log(d);
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Div<F, Internal_allocator>, Internal_allocator>(
+                return memoc::make_shared<Div<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
                     n_);
             }
 
         private:
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
         class Pow_fn : public Node<F, Internal_allocator> {
         public:
-            Pow_fn(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& f, F n)
+            Pow_fn(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& f, F n)
                 : f_(f), n_(n) {}
 
             F compute() const override
@@ -410,24 +410,24 @@ namespace computoc::algorithms::derivatives {
                 return pow(f_->compute(), n_);
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     f_->backward(id),
-                    memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
-                        memoc::pointers::make_shared<Const<F, Internal_allocator>, Internal_allocator>(n_),
-                        memoc::pointers::make_shared<Pow_fn<F, Internal_allocator>, Internal_allocator>(f_, n_ - F{ 1 })));
+                    memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                        memoc::make_shared<Const<F, Internal_allocator>, Internal_allocator>(n_),
+                        memoc::make_shared<Pow_fn<F, Internal_allocator>, Internal_allocator>(f_, n_ - F{ 1 })));
             }
 
         private:
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> f_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> f_;
             F n_;
         };
 
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
         class Pow_af : public Node<F, Internal_allocator> {
         public:
-            Pow_af(F a, const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& f)
+            Pow_af(F a, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& f)
                 : a_(a), f_(f) {}
 
             F compute() const override
@@ -435,24 +435,24 @@ namespace computoc::algorithms::derivatives {
                 return pow(a_, f_->compute());
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     f_->backward(id),
-                    memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
-                        memoc::pointers::make_shared<Pow_af<F, Internal_allocator>, Internal_allocator>(a_, f_),
-                        memoc::pointers::make_shared<Const<F, Internal_allocator>, Internal_allocator>(log(a_))));
+                    memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                        memoc::make_shared<Pow_af<F, Internal_allocator>, Internal_allocator>(a_, f_),
+                        memoc::make_shared<Const<F, Internal_allocator>, Internal_allocator>(log(a_))));
             }
 
         private:
             F a_;
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> f_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> f_;
         };
 
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
         class Pow_fg : public Node<F, Internal_allocator> {
         public:
-            Pow_fg(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+            Pow_fg(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
                 : n1_(n1), n2_(n2) {}
 
             F compute() const override
@@ -460,28 +460,28 @@ namespace computoc::algorithms::derivatives {
                 return pow(n1_->compute(), n2_->compute());
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
-                    memoc::pointers::make_shared<Pow_fg<F, Internal_allocator>, Internal_allocator>(n1_, n2_),
-                    memoc::pointers::make_shared<Add<F, Internal_allocator>, Internal_allocator>(
-                        memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
-                            memoc::pointers::make_shared<Div<F, Internal_allocator>, Internal_allocator>(n2_, n1_),
+                return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                    memoc::make_shared<Pow_fg<F, Internal_allocator>, Internal_allocator>(n1_, n2_),
+                    memoc::make_shared<Add<F, Internal_allocator>, Internal_allocator>(
+                        memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                            memoc::make_shared<Div<F, Internal_allocator>, Internal_allocator>(n2_, n1_),
                             n1_->backward(0)),
-                        memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
-                            memoc::pointers::make_shared<Ln<F, Internal_allocator>, Internal_allocator>(n1_),
+                        memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                            memoc::make_shared<Ln<F, Internal_allocator>, Internal_allocator>(n1_),
                             n2_->backward(0))));
             }
 
         private:
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n1_;
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n1_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
         };
 
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
         class Asin : public Node<F, Internal_allocator> {
         public:
-            Asin(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+            Asin(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
                 : n_(n) {}
 
             F compute() const override
@@ -489,25 +489,25 @@ namespace computoc::algorithms::derivatives {
                 return asin(n_->compute());
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
-                    memoc::pointers::make_shared<Pow_fn<F, Internal_allocator>, Internal_allocator>(
-                        memoc::pointers::make_shared<Sub<F, Internal_allocator>, Internal_allocator>(
-                            memoc::pointers::make_shared<Const<F, Internal_allocator>, Internal_allocator>(F{ 1 }),
-                            memoc::pointers::make_shared<Pow_fn<F, Internal_allocator>, Internal_allocator>(n_, F{ 2 })),
+                    memoc::make_shared<Pow_fn<F, Internal_allocator>, Internal_allocator>(
+                        memoc::make_shared<Sub<F, Internal_allocator>, Internal_allocator>(
+                            memoc::make_shared<Const<F, Internal_allocator>, Internal_allocator>(F{ 1 }),
+                            memoc::make_shared<Pow_fn<F, Internal_allocator>, Internal_allocator>(n_, F{ 2 })),
                         F{ -0.5 }));
             }
 
         private:
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
         class Acos : public Node<F, Internal_allocator> {
         public:
-            Acos(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+            Acos(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
                 : n_(n) {}
 
             F compute() const override
@@ -515,26 +515,26 @@ namespace computoc::algorithms::derivatives {
                 return acos(n_->compute());
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
-                    memoc::pointers::make_shared<Neg<F, Internal_allocator>, Internal_allocator>(
-                        memoc::pointers::make_shared<Pow_fn<F, Internal_allocator>, Internal_allocator>(
-                            memoc::pointers::make_shared<Sub<F, Internal_allocator>, Internal_allocator>(
-                                memoc::pointers::make_shared<Const<F, Internal_allocator>, Internal_allocator>(F{ 1 }),
-                                memoc::pointers::make_shared<Pow_fn<F, Internal_allocator>, Internal_allocator>(n_, F{ 2 })),
+                    memoc::make_shared<Neg<F, Internal_allocator>, Internal_allocator>(
+                        memoc::make_shared<Pow_fn<F, Internal_allocator>, Internal_allocator>(
+                            memoc::make_shared<Sub<F, Internal_allocator>, Internal_allocator>(
+                                memoc::make_shared<Const<F, Internal_allocator>, Internal_allocator>(F{ 1 }),
+                                memoc::make_shared<Pow_fn<F, Internal_allocator>, Internal_allocator>(n_, F{ 2 })),
                             F{ -0.5 })));
             }
 
         private:
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
         class Atan : public Node<F, Internal_allocator> {
         public:
-            Atan(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+            Atan(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
                 : n_(n) {}
 
             F compute() const override
@@ -542,25 +542,25 @@ namespace computoc::algorithms::derivatives {
                 return atan(n_->compute());
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
-                    memoc::pointers::make_shared<Pow_fn<F, Internal_allocator>, Internal_allocator>(
-                        memoc::pointers::make_shared<Add<F, Internal_allocator>, Internal_allocator>(
-                            memoc::pointers::make_shared<Const<F, Internal_allocator>, Internal_allocator>(F{ 1 }),
-                            memoc::pointers::make_shared<Pow_fn<F, Internal_allocator>, Internal_allocator>(n_, F{ 2 })),
+                    memoc::make_shared<Pow_fn<F, Internal_allocator>, Internal_allocator>(
+                        memoc::make_shared<Add<F, Internal_allocator>, Internal_allocator>(
+                            memoc::make_shared<Const<F, Internal_allocator>, Internal_allocator>(F{ 1 }),
+                            memoc::make_shared<Pow_fn<F, Internal_allocator>, Internal_allocator>(n_, F{ 2 })),
                         F{ -1 }));
             }
 
         private:
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
 
         template <concepts::Arithmetic F, memoc::Allocator Internal_allocator>
         class Acot : public Node<F, Internal_allocator> {
         public:
-            Acot(const memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+            Acot(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
                 : n_(n) {}
 
             F compute() const override
@@ -571,20 +571,20 @@ namespace computoc::algorithms::derivatives {
                 return atan(d / n_->compute());
             }
 
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
             {
-                return memoc::pointers::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
+                return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
-                    memoc::pointers::make_shared<Neg<F, Internal_allocator>, Internal_allocator>(
-                        memoc::pointers::make_shared<Pow_fn<F, Internal_allocator>, Internal_allocator>(
-                            memoc::pointers::make_shared<Add<F, Internal_allocator>, Internal_allocator>(
-                                memoc::pointers::make_shared<Const<F, Internal_allocator>, Internal_allocator>(F{ 1 }),
-                                memoc::pointers::make_shared<Pow_fn<F, Internal_allocator>, Internal_allocator>(n_, F{ 2 })),
+                    memoc::make_shared<Neg<F, Internal_allocator>, Internal_allocator>(
+                        memoc::make_shared<Pow_fn<F, Internal_allocator>, Internal_allocator>(
+                            memoc::make_shared<Add<F, Internal_allocator>, Internal_allocator>(
+                                memoc::make_shared<Const<F, Internal_allocator>, Internal_allocator>(F{ 1 }),
+                                memoc::make_shared<Pow_fn<F, Internal_allocator>, Internal_allocator>(n_, F{ 2 })),
                             F{ -1 })));
             }
 
         private:
-            memoc::pointers::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
     }
 
