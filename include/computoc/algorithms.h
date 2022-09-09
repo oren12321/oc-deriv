@@ -11,7 +11,7 @@
 #include <computoc/concepts.h>
 #include <computoc/math.h>
 
-namespace computoc::algorithms {
+namespace computoc {
     namespace details {
         template <Arithmetic T>
         bool is_equal(T a, T b, T eps = sqrt(epsilon<T>()))
@@ -23,7 +23,7 @@ namespace computoc::algorithms {
     using details::is_equal;
 }
 
-namespace computoc::algorithms::derivatives {
+namespace computoc {
     namespace details {
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         struct Node {
