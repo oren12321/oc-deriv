@@ -14,7 +14,7 @@
 namespace computoc {
     namespace details {
         template <Arithmetic T>
-        bool is_equal(T a, T b, T eps = sqrt(epsilon<T>()))
+        bool is_equal(const T& a, const T& b, const T& eps = sqrt(epsilon<T>()))
         {
             return abs(a - b) <= eps;
         }
