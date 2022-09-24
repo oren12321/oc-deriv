@@ -30,6 +30,7 @@ namespace computoc {
             virtual ~Node() {}
             virtual F compute() const = 0;
             virtual memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const = 0;
+            virtual void set(F value) {}
         };
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
@@ -51,6 +52,11 @@ namespace computoc {
         private:
             F value_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> constant(F value)
+        {
+            return memoc::make_shared<Const<F, Internal_allocator>, Internal_allocator>(value);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Var : public Node<F, Internal_allocator> {
@@ -58,7 +64,7 @@ namespace computoc {
             explicit Var(std::size_t id, F value = F{ 0 })
                 : id_(id), value_(value) {}
 
-            void set(F value)
+            void set(F value) override
             {
                 value_ = value;
             }
@@ -79,6 +85,11 @@ namespace computoc {
             std::size_t id_;
             F value_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> variable(std::size_t id, F value = F{ 0 })
+        {
+            return memoc::make_shared<Var<F, Internal_allocator>, Internal_allocator>(id, value);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Add : public Node<F, Internal_allocator> {
@@ -100,6 +111,26 @@ namespace computoc {
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n1_;
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> add(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+        {
+            return memoc::make_shared<Add<F, Internal_allocator>, Internal_allocator>(n1, n2);
+        }
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> operator+(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+        {
+            return memoc::make_shared<Add<F, Internal_allocator>, Internal_allocator>(n1, n2);
+        }
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> operator+(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, F value)
+        {
+            return memoc::make_shared<Add<F, Internal_allocator>, Internal_allocator>(n1, memoc::make_shared<Const<F, Internal_allocator>, Internal_allocator>(value));
+        }
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> operator+(F value, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+        {
+            return memoc::make_shared<Add<F, Internal_allocator>, Internal_allocator>(memoc::make_shared<Const<F, Internal_allocator>, Internal_allocator>(value), n2);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Sub : public Node<F, Internal_allocator> {
@@ -121,6 +152,26 @@ namespace computoc {
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n1_;
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> subtract(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+        {
+            return memoc::make_shared<Sub<F, Internal_allocator>, Internal_allocator>(n1, n2);
+        }
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> operator-(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+        {
+            return memoc::make_shared<Sub<F, Internal_allocator>, Internal_allocator>(n1, n2);
+        }
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> operator-(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, F value)
+        {
+            return memoc::make_shared<Sub<F, Internal_allocator>, Internal_allocator>(n1, memoc::make_shared<Const<F, Internal_allocator>, Internal_allocator>(value));
+        }
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> operator-(F value, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+        {
+            return memoc::make_shared<Sub<F, Internal_allocator>, Internal_allocator>(memoc::make_shared<Const<F, Internal_allocator>, Internal_allocator>(value), n2);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Neg : public Node<F, Internal_allocator> {
@@ -141,6 +192,16 @@ namespace computoc {
         private:
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> negate(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+        {
+            return memoc::make_shared<Neg<F, Internal_allocator>, Internal_allocator>(n);
+        }
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> operator-(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+        {
+            return memoc::make_shared<Neg<F, Internal_allocator>, Internal_allocator>(n);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Mul : public Node<F, Internal_allocator> {
@@ -163,6 +224,26 @@ namespace computoc {
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n1_;
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> multiply(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+        {
+            return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(n1, n2);
+        }
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> operator*(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+        {
+            return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(n1, n2);
+        }
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> operator*(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, F value)
+        {
+            return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(n1, memoc::make_shared<Const<F, Internal_allocator>, Internal_allocator>(value));
+        }
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> operator*(F value, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+        {
+            return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(memoc::make_shared<Const<F, Internal_allocator>, Internal_allocator>(value), n2);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Div : public Node<F, Internal_allocator> {
@@ -190,6 +271,26 @@ namespace computoc {
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n1_;
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> divide(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+        {
+            return memoc::make_shared<Div<F, Internal_allocator>, Internal_allocator>(n1, n2);
+        }
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> operator/(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+        {
+            return memoc::make_shared<Div<F, Internal_allocator>, Internal_allocator>(n1, n2);
+        }
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> operator/(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, F value)
+        {
+            return memoc::make_shared<Div<F, Internal_allocator>, Internal_allocator>(n1, memoc::make_shared<Const<F, Internal_allocator>, Internal_allocator>(value));
+        }
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> operator/(F value, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+        {
+            return memoc::make_shared<Div<F, Internal_allocator>, Internal_allocator>(memoc::make_shared<Const<F, Internal_allocator>, Internal_allocator>(value), n2);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Cos;
@@ -215,6 +316,11 @@ namespace computoc {
         private:
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> sin(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+        {
+            return memoc::make_shared<Sin<F, Internal_allocator>, Internal_allocator>(n);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Cos : public Node<F, Internal_allocator> {
@@ -238,6 +344,11 @@ namespace computoc {
         private:
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> cos(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+        {
+            return memoc::make_shared<Cos<F, Internal_allocator>, Internal_allocator>(n);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Sec;
@@ -265,6 +376,11 @@ namespace computoc {
         private:
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> tan(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+        {
+            return memoc::make_shared<Tan<F, Internal_allocator>, Internal_allocator>(n);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Sec : public Node<F, Internal_allocator> {
@@ -292,6 +408,11 @@ namespace computoc {
         private:
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> sec(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+        {
+            return memoc::make_shared<Sec<F, Internal_allocator>, Internal_allocator>(n);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Csc;
@@ -323,6 +444,11 @@ namespace computoc {
         private:
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> cot(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+        {
+            return memoc::make_shared<Cot<F, Internal_allocator>, Internal_allocator>(n);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Csc : public Node<F, Internal_allocator> {
@@ -351,6 +477,11 @@ namespace computoc {
         private:
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> csc(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+        {
+            return memoc::make_shared<Csc<F, Internal_allocator>, Internal_allocator>(n);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Exp : public Node<F, Internal_allocator> {
@@ -373,6 +504,11 @@ namespace computoc {
         private:
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> exp(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+        {
+            return memoc::make_shared<Exp<F, Internal_allocator>, Internal_allocator>(n);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Ln : public Node<F, Internal_allocator> {
@@ -398,6 +534,11 @@ namespace computoc {
         private:
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> ln(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+        {
+            return memoc::make_shared<Ln<F, Internal_allocator>, Internal_allocator>(n);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Pow_fn : public Node<F, Internal_allocator> {
@@ -423,6 +564,16 @@ namespace computoc {
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> f_;
             F n_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> pow(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& f, F n)
+        {
+            return memoc::make_shared<Pow_fn<F, Internal_allocator>, Internal_allocator>(f, n);
+        }
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> operator^(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& f, F n)
+        {
+            return memoc::make_shared<Pow_fn<F, Internal_allocator>, Internal_allocator>(f, n);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Pow_af : public Node<F, Internal_allocator> {
@@ -448,6 +599,16 @@ namespace computoc {
             F a_;
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> f_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> pow(F a, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& f)
+        {
+            return memoc::make_shared<Pow_af<F, Internal_allocator>, Internal_allocator>(a, f);
+        }
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> operator^(F a, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& f)
+        {
+            return memoc::make_shared<Pow_af<F, Internal_allocator>, Internal_allocator>(a, f);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Pow_fg : public Node<F, Internal_allocator> {
@@ -477,6 +638,16 @@ namespace computoc {
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n1_;
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n2_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> pow(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+        {
+            return memoc::make_shared<Pow_fg<F, Internal_allocator>, Internal_allocator>(n1, n2);
+        }
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> operator^(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n2)
+        {
+            return memoc::make_shared<Pow_fg<F, Internal_allocator>, Internal_allocator>(n1, n2);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Asin : public Node<F, Internal_allocator> {
@@ -503,6 +674,11 @@ namespace computoc {
         private:
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> asin(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+        {
+            return memoc::make_shared<Asin<F, Internal_allocator>, Internal_allocator>(n);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Acos : public Node<F, Internal_allocator> {
@@ -530,6 +706,11 @@ namespace computoc {
         private:
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> acos(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+        {
+            return memoc::make_shared<Acos<F, Internal_allocator>, Internal_allocator>(n);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Atan : public Node<F, Internal_allocator> {
@@ -556,6 +737,11 @@ namespace computoc {
         private:
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> atan(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+        {
+            return memoc::make_shared<Atan<F, Internal_allocator>, Internal_allocator>(n);
+        }
 
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Acot : public Node<F, Internal_allocator> {
@@ -586,6 +772,11 @@ namespace computoc {
         private:
             memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> n_;
         };
+        template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> acot(const memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator>& n)
+        {
+            return memoc::make_shared<Acot<F, Internal_allocator>, Internal_allocator>(n);
+        }
     }
 
     using details::Acos;
@@ -611,6 +802,27 @@ namespace computoc {
     using details::Sub;
     using details::Tan;
     using details::Var;
+
+    using details::acos;
+    using details::acot;
+    using details::add;
+    using details::asin;
+    using details::atan;
+    using details::constant;
+    using details::cos;
+    using details::cot;
+    using details::csc;
+    using details::divide;
+    using details::exp;
+    using details::ln;
+    using details::multiply;
+    using details::negate;
+    using details::pow;
+    using details::sec;
+    using details::sin;
+    using details::subtract;
+    using details::tan;
+    using details::variable;
 }
 
 #endif // COMPUTOC_ALGORITHMS_H
