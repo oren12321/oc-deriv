@@ -3,25 +3,10 @@
 #include <memory>
 #include <cmath>
 
-#include <computoc/algorithms.h>
+#include <computoc/derivatives.h>
 #include <memoc/allocators.h>
 #include <memoc/pointers.h>
 //#include <computoc/complex.h>
-
-TEST(Algorithms_test, two_numbers_can_be_compared_with_specified_percision)
-{
-    using namespace computoc;
-
-    int a = 0;
-    int b = 1;
-    EXPECT_FALSE(is_equal(a, b));
-    EXPECT_TRUE(is_equal(a, b, 1));
-
-    double c = 0.0;
-    double d = 1.0e-10;
-    EXPECT_TRUE(is_equal(c, d));
-    EXPECT_FALSE(is_equal(c, d, 1.0e-15));
-}
 
 TEST(Algorithm_test, constant_backward_derivative)
 {

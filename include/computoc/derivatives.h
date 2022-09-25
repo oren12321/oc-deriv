@@ -1,8 +1,6 @@
-#ifndef COMPUTOC_ALGORITHMS_H
-#define COMPUTOC_ALGORITHMS_H
+#ifndef COMPUTOC_DERIVATIVES_H
+#define COMPUTOC_DERIVATIVES_H
 
-#include <type_traits>
-#include <cmath>
 #include <stdexcept>
 
 #include <memoc/allocators.h>
@@ -10,18 +8,6 @@
 #include <computoc/errors.h>
 #include <computoc/concepts.h>
 #include <computoc/math.h>
-
-namespace computoc {
-    namespace details {
-        template <Arithmetic T>
-        bool is_equal(const T& a, const T& b, const T& eps = sqrt(epsilon<T>()))
-        {
-            return abs(a - b) <= eps;
-        }
-    }
-
-    using details::is_equal;
-}
 
 namespace computoc {
     namespace details {
