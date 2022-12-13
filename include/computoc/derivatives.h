@@ -2,6 +2,7 @@
 #define COMPUTOC_DERIVATIVES_H
 
 #include <stdexcept>
+#include <cstdint>
 
 #include <memoc/allocators.h>
 #include <memoc/pointers.h>
@@ -15,7 +16,7 @@ namespace computoc {
         struct Node {
             virtual ~Node() {}
             virtual F compute() const = 0;
-            virtual memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const = 0;
+            virtual memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const = 0;
             virtual void set(F value) {}
         };
 
@@ -30,7 +31,7 @@ namespace computoc {
                 return value_;
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Const<F, Internal_allocator>, Internal_allocator>(F{ 0 });
             }
@@ -47,7 +48,7 @@ namespace computoc {
         template <Arithmetic F, memoc::Allocator Internal_allocator>
         class Var : public Node<F, Internal_allocator> {
         public:
-            explicit Var(std::size_t id, F value = F{ 0 })
+            explicit Var(std::int64_t id, F value = F{ 0 })
                 : id_(id), value_(value) {}
 
             void set(F value) override
@@ -60,7 +61,7 @@ namespace computoc {
                 return value_;
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return id_ == id ?
                     memoc::make_shared<Const<F, Internal_allocator>, Internal_allocator>(F{ 1 }) :
@@ -68,11 +69,11 @@ namespace computoc {
             }
 
         private:
-            std::size_t id_;
+            std::int64_t id_;
             F value_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Arithmetic F>
-        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> variable(std::size_t id, F value = F{ 0 })
+        memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> variable(std::int64_t id, F value = F{ 0 })
         {
             return memoc::make_shared<Var<F, Internal_allocator>, Internal_allocator>(id, value);
         }
@@ -88,7 +89,7 @@ namespace computoc {
                 return n1_->compute() + n2_->compute();
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Add<F, Internal_allocator>, Internal_allocator>(n1_->backward(id), n2_->backward(id));
             }
@@ -129,7 +130,7 @@ namespace computoc {
                 return n1_->compute() - n2_->compute();
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Sub<F, Internal_allocator>, Internal_allocator>(n1_->backward(id), n2_->backward(id));
             }
@@ -170,7 +171,7 @@ namespace computoc {
                 return -n_->compute();
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Neg<F, Internal_allocator>, Internal_allocator>(n_->backward(id));
             }
@@ -200,7 +201,7 @@ namespace computoc {
                 return n1_->compute() * n2_->compute();
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Add<F, Internal_allocator>, Internal_allocator>(
                     memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(n1_->backward(id), n2_),
@@ -245,7 +246,7 @@ namespace computoc {
                 return n1_->compute() / n2_value;
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Div<F, Internal_allocator>, Internal_allocator>(
                     memoc::make_shared<Sub<F, Internal_allocator>, Internal_allocator>(
@@ -292,7 +293,7 @@ namespace computoc {
                 return sin(n_->compute());
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -319,7 +320,7 @@ namespace computoc {
                 return cos(n_->compute());
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -350,7 +351,7 @@ namespace computoc {
                 return tan(n_->compute());
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -382,7 +383,7 @@ namespace computoc {
                 return F{ 1 } / d;
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -417,7 +418,7 @@ namespace computoc {
                 return F{ 1 } / d;
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -450,7 +451,7 @@ namespace computoc {
                 return F{ 1 } / d;
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -480,7 +481,7 @@ namespace computoc {
                 return exp(n_->compute());
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -510,7 +511,7 @@ namespace computoc {
                 return log(d);
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Div<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -537,7 +538,7 @@ namespace computoc {
                 return pow(f_->compute(), n_);
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     f_->backward(id),
@@ -572,7 +573,7 @@ namespace computoc {
                 return pow(a_, f_->compute());
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     f_->backward(id),
@@ -607,7 +608,7 @@ namespace computoc {
                 return pow(n1_->compute(), n2_->compute());
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     memoc::make_shared<Pow_fg<F, Internal_allocator>, Internal_allocator>(n1_, n2_),
@@ -646,7 +647,7 @@ namespace computoc {
                 return asin(n_->compute());
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -677,7 +678,7 @@ namespace computoc {
                 return acos(n_->compute());
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -709,7 +710,7 @@ namespace computoc {
                 return atan(n_->compute());
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -743,7 +744,7 @@ namespace computoc {
                 return atan(d / n_->compute());
             }
 
-            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::size_t id) const override
+            memoc::Shared_ptr<Node<F, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<F, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
