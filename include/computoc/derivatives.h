@@ -15,8 +15,8 @@ namespace computoc {
         template <Numeric T, memoc::Allocator Internal_allocator>
         struct Node {
             virtual ~Node() {}
-            virtual T compute() const = 0;
-            virtual memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const = 0;
+            [[nodiscard]] virtual T compute() const = 0;
+            [[nodiscard]] virtual memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const = 0;
             virtual void set(T value) {}
         };
 
@@ -56,12 +56,12 @@ namespace computoc {
                 value_ = value;
             }
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 return value_;
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return id_ == id ?
                     memoc::make_shared<Const<T, Internal_allocator>, Internal_allocator>(T{ 1 }) :
@@ -73,7 +73,7 @@ namespace computoc {
             T value_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> variable(std::int64_t id, T value = T{ 0 })
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> variable(std::int64_t id, T value = T{ 0 })
         {
             return memoc::make_shared<Var<T, Internal_allocator>, Internal_allocator>(id, value);
         }
@@ -84,12 +84,12 @@ namespace computoc {
             Add(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
                 : n1_(n1), n2_(n2) {}
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 return n1_->compute() + n2_->compute();
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Add<T, Internal_allocator>, Internal_allocator>(n1_->backward(id), n2_->backward(id));
             }
@@ -99,22 +99,22 @@ namespace computoc {
             memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> n2_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> add(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> add(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
         {
             return memoc::make_shared<Add<T, Internal_allocator>, Internal_allocator>(n1, n2);
         }
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator+(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator+(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
         {
             return memoc::make_shared<Add<T, Internal_allocator>, Internal_allocator>(n1, n2);
         }
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator+(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, T value)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator+(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, T value)
         {
             return memoc::make_shared<Add<T, Internal_allocator>, Internal_allocator>(n1, memoc::make_shared<Const<T, Internal_allocator>, Internal_allocator>(value));
         }
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator+(T value, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator+(T value, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
         {
             return memoc::make_shared<Add<T, Internal_allocator>, Internal_allocator>(memoc::make_shared<Const<T, Internal_allocator>, Internal_allocator>(value), n2);
         }
@@ -125,12 +125,12 @@ namespace computoc {
             Sub(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
                 : n1_(n1), n2_(n2) {}
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 return n1_->compute() - n2_->compute();
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Sub<T, Internal_allocator>, Internal_allocator>(n1_->backward(id), n2_->backward(id));
             }
@@ -140,22 +140,22 @@ namespace computoc {
             memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> n2_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> subtract(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> subtract(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
         {
             return memoc::make_shared<Sub<T, Internal_allocator>, Internal_allocator>(n1, n2);
         }
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator-(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator-(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
         {
             return memoc::make_shared<Sub<T, Internal_allocator>, Internal_allocator>(n1, n2);
         }
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator-(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, T value)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator-(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, T value)
         {
             return memoc::make_shared<Sub<T, Internal_allocator>, Internal_allocator>(n1, memoc::make_shared<Const<T, Internal_allocator>, Internal_allocator>(value));
         }
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator-(T value, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator-(T value, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
         {
             return memoc::make_shared<Sub<T, Internal_allocator>, Internal_allocator>(memoc::make_shared<Const<T, Internal_allocator>, Internal_allocator>(value), n2);
         }
@@ -166,12 +166,12 @@ namespace computoc {
             Neg(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
                 : n_(n) {}
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 return -n_->compute();
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Neg<T, Internal_allocator>, Internal_allocator>(n_->backward(id));
             }
@@ -180,12 +180,12 @@ namespace computoc {
             memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> n_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> negate(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> negate(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
         {
             return memoc::make_shared<Neg<T, Internal_allocator>, Internal_allocator>(n);
         }
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator-(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator-(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
         {
             return memoc::make_shared<Neg<T, Internal_allocator>, Internal_allocator>(n);
         }
@@ -196,12 +196,12 @@ namespace computoc {
             Mul(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
                 : n1_(n1), n2_(n2) {}
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 return n1_->compute() * n2_->compute();
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Add<T, Internal_allocator>, Internal_allocator>(
                     memoc::make_shared<Mul<T, Internal_allocator>, Internal_allocator>(n1_->backward(id), n2_),
@@ -212,22 +212,22 @@ namespace computoc {
             memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> n2_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> multiply(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> multiply(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
         {
             return memoc::make_shared<Mul<T, Internal_allocator>, Internal_allocator>(n1, n2);
         }
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator*(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator*(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
         {
             return memoc::make_shared<Mul<T, Internal_allocator>, Internal_allocator>(n1, n2);
         }
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator*(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, T value)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator*(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, T value)
         {
             return memoc::make_shared<Mul<T, Internal_allocator>, Internal_allocator>(n1, memoc::make_shared<Const<T, Internal_allocator>, Internal_allocator>(value));
         }
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator*(T value, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator*(T value, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
         {
             return memoc::make_shared<Mul<T, Internal_allocator>, Internal_allocator>(memoc::make_shared<Const<T, Internal_allocator>, Internal_allocator>(value), n2);
         }
@@ -238,7 +238,7 @@ namespace computoc {
             Div(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
                 : n1_(n1), n2_(n2) {}
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 T n2_value{ n2_->compute() };
                 COMPUTOC_THROW_IF_FALSE(n2_value != T{}, std::overflow_error, "division by zero");
@@ -246,7 +246,7 @@ namespace computoc {
                 return n1_->compute() / n2_value;
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Div<T, Internal_allocator>, Internal_allocator>(
                     memoc::make_shared<Sub<T, Internal_allocator>, Internal_allocator>(
@@ -259,22 +259,22 @@ namespace computoc {
             memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> n2_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> divide(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> divide(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
         {
             return memoc::make_shared<Div<T, Internal_allocator>, Internal_allocator>(n1, n2);
         }
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator/(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator/(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
         {
             return memoc::make_shared<Div<T, Internal_allocator>, Internal_allocator>(n1, n2);
         }
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator/(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, T value)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator/(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, T value)
         {
             return memoc::make_shared<Div<T, Internal_allocator>, Internal_allocator>(n1, memoc::make_shared<Const<T, Internal_allocator>, Internal_allocator>(value));
         }
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator/(T value, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator/(T value, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
         {
             return memoc::make_shared<Div<T, Internal_allocator>, Internal_allocator>(memoc::make_shared<Const<T, Internal_allocator>, Internal_allocator>(value), n2);
         }
@@ -288,12 +288,12 @@ namespace computoc {
             Sin(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
                 : n_(n) {}
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 return sin(n_->compute());
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<T, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -304,7 +304,7 @@ namespace computoc {
             memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> n_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> sin(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> sin(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
         {
             return memoc::make_shared<Sin<T, Internal_allocator>, Internal_allocator>(n);
         }
@@ -315,12 +315,12 @@ namespace computoc {
             Cos(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& v)
                 : n_(v) {}
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 return cos(n_->compute());
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<T, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -332,7 +332,7 @@ namespace computoc {
             memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> n_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> cos(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> cos(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
         {
             return memoc::make_shared<Cos<T, Internal_allocator>, Internal_allocator>(n);
         }
@@ -346,12 +346,12 @@ namespace computoc {
             Tan(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& v)
                 : n_(v) {}
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 return tan(n_->compute());
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<T, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -364,7 +364,7 @@ namespace computoc {
             memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> n_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> tan(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> tan(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
         {
             return memoc::make_shared<Tan<T, Internal_allocator>, Internal_allocator>(n);
         }
@@ -375,7 +375,7 @@ namespace computoc {
             Sec(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& v)
                 : n_(v) {}
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 T d{ cos(n_->compute()) };
                 COMPUTOC_THROW_IF_FALSE(d != T{}, std::overflow_error, "division by zero");
@@ -383,7 +383,7 @@ namespace computoc {
                 return T{ 1 } / d;
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<T, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -396,7 +396,7 @@ namespace computoc {
             memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> n_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> sec(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> sec(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
         {
             return memoc::make_shared<Sec<T, Internal_allocator>, Internal_allocator>(n);
         }
@@ -410,7 +410,7 @@ namespace computoc {
             Cot(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& v)
                 : n_(v) {}
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 T d{ tan(n_->compute()) };
                 COMPUTOC_THROW_IF_FALSE(d != T{}, std::overflow_error, "division by zero");
@@ -418,7 +418,7 @@ namespace computoc {
                 return T{ 1 } / d;
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<T, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -432,7 +432,7 @@ namespace computoc {
             memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> n_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> cot(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> cot(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
         {
             return memoc::make_shared<Cot<T, Internal_allocator>, Internal_allocator>(n);
         }
@@ -443,7 +443,7 @@ namespace computoc {
             Csc(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& v)
                 : n_(v) {}
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 T d{ sin(n_->compute()) };
                 COMPUTOC_THROW_IF_FALSE(d != T{}, std::overflow_error, "division by zero");
@@ -451,7 +451,7 @@ namespace computoc {
                 return T{ 1 } / d;
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<T, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -476,12 +476,12 @@ namespace computoc {
             Exp(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& v)
                 : n_(v) {}
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 return exp(n_->compute());
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<T, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -492,7 +492,7 @@ namespace computoc {
             memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> n_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> exp(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> exp(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
         {
             return memoc::make_shared<Exp<T, Internal_allocator>, Internal_allocator>(n);
         }
@@ -503,7 +503,7 @@ namespace computoc {
             Ln(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& v)
                 : n_(v) {}
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 T d{ n_->compute() };
                 COMPUTOC_THROW_IF_FALSE(d > T{}, std::overflow_error, "log of non-positive number");
@@ -511,7 +511,7 @@ namespace computoc {
                 return log(d);
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Div<T, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -522,7 +522,7 @@ namespace computoc {
             memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> n_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> ln(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> ln(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
         {
             return memoc::make_shared<Ln<T, Internal_allocator>, Internal_allocator>(n);
         }
@@ -533,12 +533,12 @@ namespace computoc {
             Pow_fn(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& f, T n)
                 : f_(f), n_(n) {}
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 return pow(f_->compute(), n_);
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<T, Internal_allocator>, Internal_allocator>(
                     f_->backward(id),
@@ -552,12 +552,12 @@ namespace computoc {
             T n_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> pow(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& f, T n)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> pow(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& f, T n)
         {
             return memoc::make_shared<Pow_fn<T, Internal_allocator>, Internal_allocator>(f, n);
         }
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator^(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& f, T n)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator^(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& f, T n)
         {
             return memoc::make_shared<Pow_fn<T, Internal_allocator>, Internal_allocator>(f, n);
         }
@@ -568,12 +568,12 @@ namespace computoc {
             Pow_af(T a, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& f)
                 : a_(a), f_(f) {}
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 return pow(a_, f_->compute());
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<T, Internal_allocator>, Internal_allocator>(
                     f_->backward(id),
@@ -587,12 +587,12 @@ namespace computoc {
             memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> f_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> pow(T a, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& f)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> pow(T a, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& f)
         {
             return memoc::make_shared<Pow_af<T, Internal_allocator>, Internal_allocator>(a, f);
         }
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator^(T a, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& f)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator^(T a, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& f)
         {
             return memoc::make_shared<Pow_af<T, Internal_allocator>, Internal_allocator>(a, f);
         }
@@ -603,12 +603,12 @@ namespace computoc {
             Pow_fg(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
                 : n1_(n1), n2_(n2) {}
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 return pow(n1_->compute(), n2_->compute());
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<T, Internal_allocator>, Internal_allocator>(
                     memoc::make_shared<Pow_fg<T, Internal_allocator>, Internal_allocator>(n1_, n2_),
@@ -626,12 +626,12 @@ namespace computoc {
             memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> n2_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> pow(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> pow(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
         {
             return memoc::make_shared<Pow_fg<T, Internal_allocator>, Internal_allocator>(n1, n2);
         }
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator^(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> operator^(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n1, const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n2)
         {
             return memoc::make_shared<Pow_fg<T, Internal_allocator>, Internal_allocator>(n1, n2);
         }
@@ -642,12 +642,12 @@ namespace computoc {
             Asin(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
                 : n_(n) {}
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 return asin(n_->compute());
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<T, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -662,7 +662,7 @@ namespace computoc {
             memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> n_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> asin(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> asin(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
         {
             return memoc::make_shared<Asin<T, Internal_allocator>, Internal_allocator>(n);
         }
@@ -673,12 +673,12 @@ namespace computoc {
             Acos(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
                 : n_(n) {}
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 return acos(n_->compute());
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<T, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -694,7 +694,7 @@ namespace computoc {
             memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> n_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> acos(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> acos(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
         {
             return memoc::make_shared<Acos<T, Internal_allocator>, Internal_allocator>(n);
         }
@@ -705,12 +705,12 @@ namespace computoc {
             Atan(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
                 : n_(n) {}
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 return atan(n_->compute());
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<T, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -725,7 +725,7 @@ namespace computoc {
             memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> n_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> atan(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> atan(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
         {
             return memoc::make_shared<Atan<T, Internal_allocator>, Internal_allocator>(n);
         }
@@ -736,7 +736,7 @@ namespace computoc {
             Acot(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
                 : n_(n) {}
 
-            T compute() const override
+            [[nodiscard]] T compute() const override
             {
                 T d{ n_->compute() };
                 COMPUTOC_THROW_IF_FALSE(d != T{}, std::overflow_error, "division by zero");
@@ -744,7 +744,7 @@ namespace computoc {
                 return atan(d / n_->compute());
             }
 
-            memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
+            [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> backward(std::int64_t id) const override
             {
                 return memoc::make_shared<Mul<T, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
@@ -760,7 +760,7 @@ namespace computoc {
             memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> n_;
         };
         template <memoc::Allocator Internal_allocator = memoc::Malloc_allocator, Numeric T>
-        memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> acot(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
+        [[nodiscard]] memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator> acot(const memoc::Shared_ptr<Node<T, Internal_allocator>, Internal_allocator>& n)
         {
             return memoc::make_shared<Acot<T, Internal_allocator>, Internal_allocator>(n);
         }
