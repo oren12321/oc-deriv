@@ -241,7 +241,7 @@ namespace computoc {
             [[nodiscard]] T compute() const override
             {
                 T n2_value{ n2_->compute() };
-                ERROC_THROW_IF_FALSE(n2_value != T{}, std::overflow_error, "division by zero");
+                ERROC_EXPECT(n2_value != T{}, std::overflow_error, "division by zero");
 
                 return n1_->compute() / n2_value;
             }
@@ -378,7 +378,7 @@ namespace computoc {
             [[nodiscard]] T compute() const override
             {
                 T d{ cos(n_->compute()) };
-                ERROC_THROW_IF_FALSE(d != T{}, std::overflow_error, "division by zero");
+                ERROC_EXPECT(d != T{}, std::overflow_error, "division by zero");
 
                 return T{ 1 } / d;
             }
@@ -413,7 +413,7 @@ namespace computoc {
             [[nodiscard]] T compute() const override
             {
                 T d{ tan(n_->compute()) };
-                ERROC_THROW_IF_FALSE(d != T{}, std::overflow_error, "division by zero");
+                ERROC_EXPECT(d != T{}, std::overflow_error, "division by zero");
 
                 return T{ 1 } / d;
             }
@@ -446,7 +446,7 @@ namespace computoc {
             [[nodiscard]] T compute() const override
             {
                 T d{ sin(n_->compute()) };
-                ERROC_THROW_IF_FALSE(d != T{}, std::overflow_error, "division by zero");
+                ERROC_EXPECT(d != T{}, std::overflow_error, "division by zero");
 
                 return T{ 1 } / d;
             }
@@ -506,7 +506,7 @@ namespace computoc {
             [[nodiscard]] T compute() const override
             {
                 T d{ n_->compute() };
-                ERROC_THROW_IF_FALSE(d > T{}, std::overflow_error, "log of non-positive number");
+                ERROC_EXPECT(d > T{}, std::overflow_error, "log of non-positive number");
 
                 return log(d);
             }
@@ -739,7 +739,7 @@ namespace computoc {
             [[nodiscard]] T compute() const override
             {
                 T d{ n_->compute() };
-                ERROC_THROW_IF_FALSE(d != T{}, std::overflow_error, "division by zero");
+                ERROC_EXPECT(d != T{}, std::overflow_error, "division by zero");
 
                 return atan(d / n_->compute());
             }
