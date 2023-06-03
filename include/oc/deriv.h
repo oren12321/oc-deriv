@@ -1,5 +1,5 @@
-#ifndef COMPUTOC_DERIVATIVES_H
-#define COMPUTOC_DERIVATIVES_H
+#ifndef OC_DERIV_H
+#define OC_DERIV_H
 
 #include <stdexcept>
 #include <cstdint>
@@ -7,7 +7,7 @@
 #include <type_traits>
 #include <cmath>
 
-namespace computoc {
+namespace oc {
     namespace details {
         template <typename T, template<typename> typename Allocator, typename ...Args>
         std::shared_ptr<T> make_node(Args&&... args)
@@ -827,4 +827,4 @@ namespace computoc {
     using details::variable;
 }
 
-#endif // COMPUTOC_ALGORITHMS_H
+#endif // OC_DERIV_H

@@ -3,11 +3,11 @@
 #include <memory>
 #include <cmath>
 
-#include <computoc/derivatives.h>
+#include <oc/deriv.h>
 
 TEST(Derivation, constant_backward_derivative)
 {
-    using namespace computoc;
+    using namespace oc;
 
 
     {
@@ -30,7 +30,7 @@ TEST(Derivation, constant_backward_derivative)
 
 TEST(Derivation, variable_backward_derivative)
 {
-    using namespace computoc;
+    using namespace oc;
 
 
     {
@@ -63,7 +63,7 @@ TEST(Derivation, variable_backward_derivative)
 
 TEST(Derivation, addition_backward_derivative)
 {
-    using namespace computoc;
+    using namespace oc;
 
 
     {
@@ -108,7 +108,7 @@ TEST(Derivation, addition_backward_derivative)
 
 TEST(Derivation, subtraction_backward_derivative)
 {
-    using namespace computoc;
+    using namespace oc;
 
 
     {
@@ -153,7 +153,7 @@ TEST(Derivation, subtraction_backward_derivative)
 
 TEST(Derivation, negation_backward_derivative)
 {
-    using namespace computoc;
+    using namespace oc;
 
 
     {
@@ -186,7 +186,7 @@ TEST(Derivation, negation_backward_derivative)
 
 TEST(Derivation, multiplication_backward_derivative)
 {
-    using namespace computoc;
+    using namespace oc;
 
 
     {
@@ -231,7 +231,7 @@ TEST(Derivation, multiplication_backward_derivative)
 
 TEST(Derivation, division_backward_derivative)
 {
-    using namespace computoc;
+    using namespace oc;
 
 
     {
@@ -276,7 +276,7 @@ TEST(Derivation, division_backward_derivative)
 
 TEST(Derivation, sin_and_cos_backward_derivative)
 {
-    using namespace computoc;
+    using namespace oc;
 
 
     {
@@ -311,7 +311,7 @@ TEST(Derivation, sin_and_cos_backward_derivative)
 
 TEST(Derivation, tan_and_sec_backward_derivative)
 {
-    using namespace computoc;
+    using namespace oc;
 
 
     {
@@ -346,7 +346,7 @@ TEST(Derivation, tan_and_sec_backward_derivative)
 
 TEST(Derivation, cot_and_csc_backward_derivative)
 {
-    using namespace computoc;
+    using namespace oc;
 
 
     {
@@ -381,7 +381,7 @@ TEST(Derivation, cot_and_csc_backward_derivative)
 
 TEST(Derivation, exp_and_ln_backward_derivative)
 {
-    using namespace computoc;
+    using namespace oc;
 
 
     {
@@ -416,7 +416,7 @@ TEST(Derivation, exp_and_ln_backward_derivative)
 
 TEST(Derivation, pow_f_by_n_backward_derivative)
 {
-    using namespace computoc;
+    using namespace oc;
 
 
     {
@@ -446,7 +446,7 @@ TEST(Derivation, pow_f_by_n_backward_derivative)
 
 TEST(Derivation, pow_a_by_f_backward_derivative)
 {
-    using namespace computoc;
+    using namespace oc;
 
 
     {
@@ -476,7 +476,7 @@ TEST(Derivation, pow_a_by_f_backward_derivative)
 
 TEST(Derivation, pow_f_by_g_backward_derivative)
 {
-    using namespace computoc;
+    using namespace oc;
 
 
     {
@@ -509,7 +509,7 @@ TEST(Derivation, pow_f_by_g_backward_derivative)
 
 TEST(Derivation, asin_backward_derivative)
 {
-    using namespace computoc;
+    using namespace oc;
 
 
     {
@@ -535,7 +535,7 @@ TEST(Derivation, asin_backward_derivative)
 
 TEST(Derivation, acos_backward_derivative)
 {
-    using namespace computoc;
+    using namespace oc;
 
 
     {
@@ -561,7 +561,7 @@ TEST(Derivation, acos_backward_derivative)
 
 TEST(Derivation, atan_backward_derivative)
 {
-    using namespace computoc;
+    using namespace oc;
 
 
     {
@@ -587,7 +587,7 @@ TEST(Derivation, atan_backward_derivative)
 
 TEST(Derivation, acot_backward_derivative)
 {
-    using namespace computoc;
+    using namespace oc;
 
 
     {
@@ -613,7 +613,7 @@ TEST(Derivation, acot_backward_derivative)
 
 TEST(Algorithms_test, can_perform_backward_derivation)
 {
-    using namespace computoc;
+    using namespace oc;
 
 
     {
