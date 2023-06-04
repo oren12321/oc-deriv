@@ -7,7 +7,7 @@
 #include <type_traits>
 #include <cmath>
 
-namespace oc {
+namespace oc::deriv {
     namespace details {
         template <typename T, template<typename> typename Allocator, typename ...Args>
         std::shared_ptr<T> make_node(Args&&... args)
