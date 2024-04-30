@@ -48,7 +48,7 @@ namespace oc::deriv {
 
             std::ostream& print(std::ostream& os) const override
             {
-                os << value_;
+                os << '(' << value_ << ')';
                 return os;
             }
 
@@ -212,7 +212,7 @@ namespace oc::deriv {
 
             std::ostream& print(std::ostream& os) const override
             {
-                os << '(' << '-' << '(' << n_ << ')' << ')';
+                os << '(' << '-' << n_ << ')';
                 return os;
             }
 
@@ -668,7 +668,7 @@ namespace oc::deriv {
 
             std::ostream& print(std::ostream& os) const override
             {
-                os << '(' << f_ << ")^" << n_;
+                os << '(' << f_ << ")^" << '(' << n_ << ')';
                 return os;
             }
 
@@ -710,7 +710,7 @@ namespace oc::deriv {
 
             std::ostream& print(std::ostream& os) const override
             {
-                os << a_ << "^(" << f_ << ')';
+                os << '(' << a_ << ')' << "^(" << f_ << ')';
                 return os;
             }
 

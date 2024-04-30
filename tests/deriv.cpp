@@ -687,5 +687,5 @@ TEST(Derivation, can_print_a_complex_function)
     std::stringstream ss;
     ss << g;
 
-    EXPECT_EQ(ss.str(), "((ln((x0+x1)))^2)^(sin(((x0+x1)*x0)))");
+    EXPECT_EQ(ss.str(), "((ln((x0+x1)))^(2))^(sin(((x0+x1)*x0)))");
 }
