@@ -344,7 +344,8 @@ namespace oc::deriv {
 
             [[nodiscard]] T compute() const override
             {
-                return std::sin(n_->compute());
+                using std::sin;
+                return sin(n_->compute());
             }
 
             [[nodiscard]] std::shared_ptr<Node<T, Internal_allocator>> backward(std::int64_t id) const override
@@ -377,7 +378,8 @@ namespace oc::deriv {
 
             [[nodiscard]] T compute() const override
             {
-                return std::cos(n_->compute());
+                using std::cos;
+                return cos(n_->compute());
             }
 
             [[nodiscard]] std::shared_ptr<Node<T, Internal_allocator>> backward(std::int64_t id) const override
@@ -414,7 +416,8 @@ namespace oc::deriv {
 
             [[nodiscard]] T compute() const override
             {
-                return std::tan(n_->compute());
+                using std::tan;
+                return tan(n_->compute());
             }
 
             [[nodiscard]] std::shared_ptr<Node<T, Internal_allocator>> backward(std::int64_t id) const override
@@ -449,7 +452,8 @@ namespace oc::deriv {
 
             [[nodiscard]] T compute() const override
             {
-                T d{ std::cos(n_->compute()) };
+                using std::cos;
+                T d{ cos(n_->compute()) };
                 if (d == T{}) {
                     throw std::overflow_error{ "division by zero" };
                 }
@@ -492,7 +496,8 @@ namespace oc::deriv {
 
             [[nodiscard]] T compute() const override
             {
-                T d{ std::tan(n_->compute()) };
+                using std::tan;
+                T d{ tan(n_->compute()) };
                 if (d == T{}) {
                     throw std::overflow_error{ "division by zero" };
                 }
@@ -533,7 +538,8 @@ namespace oc::deriv {
 
             [[nodiscard]] T compute() const override
             {
-                T d{ std::sin(n_->compute()) };
+                using std::sin;
+                T d{ sin(n_->compute()) };
                 if (d == T{}) {
                     throw std::overflow_error{ "division by zero" };
                 }
@@ -574,7 +580,8 @@ namespace oc::deriv {
 
             [[nodiscard]] T compute() const override
             {
-                return std::exp(n_->compute());
+                using std::exp;
+                return exp(n_->compute());
             }
 
             [[nodiscard]] std::shared_ptr<Node<T, Internal_allocator>> backward(std::int64_t id) const override
@@ -607,12 +614,13 @@ namespace oc::deriv {
 
             [[nodiscard]] T compute() const override
             {
+                using std::log;
                 T d{ n_->compute() };
                 if (d <= T{}) {
                     throw std::overflow_error{ "log of non-positive number" };
                 }
 
-                return std::log(d);
+                return log(d);
             }
 
             [[nodiscard]] std::shared_ptr<Node<T, Internal_allocator>> backward(std::int64_t id) const override
@@ -645,7 +653,8 @@ namespace oc::deriv {
 
             [[nodiscard]] T compute() const override
             {
-                return std::pow(f_->compute(), n_);
+                using std::pow;
+                return pow(f_->compute(), n_);
             }
 
             [[nodiscard]] std::shared_ptr<Node<T, Internal_allocator>> backward(std::int64_t id) const override
@@ -686,7 +695,8 @@ namespace oc::deriv {
 
             [[nodiscard]] T compute() const override
             {
-                return std::pow(a_, f_->compute());
+                using std::pow;
+                return pow(a_, f_->compute());
             }
 
             [[nodiscard]] std::shared_ptr<Node<T, Internal_allocator>> backward(std::int64_t id) const override
@@ -727,7 +737,8 @@ namespace oc::deriv {
 
             [[nodiscard]] T compute() const override
             {
-                return std::pow(n1_->compute(), n2_->compute());
+                using std::pow;
+                return pow(n1_->compute(), n2_->compute());
             }
 
             [[nodiscard]] std::shared_ptr<Node<T, Internal_allocator>> backward(std::int64_t id) const override
@@ -772,7 +783,8 @@ namespace oc::deriv {
 
             [[nodiscard]] T compute() const override
             {
-                return std::asin(n_->compute());
+                using std::asin;
+                return asin(n_->compute());
             }
 
             [[nodiscard]] std::shared_ptr<Node<T, Internal_allocator>> backward(std::int64_t id) const override
@@ -809,7 +821,8 @@ namespace oc::deriv {
 
             [[nodiscard]] T compute() const override
             {
-                return std::acos(n_->compute());
+                using std::acos;
+                return acos(n_->compute());
             }
 
             [[nodiscard]] std::shared_ptr<Node<T, Internal_allocator>> backward(std::int64_t id) const override
@@ -847,7 +860,8 @@ namespace oc::deriv {
 
             [[nodiscard]] T compute() const override
             {
-                return std::atan(n_->compute());
+                using std::atan;
+                return atan(n_->compute());
             }
 
             [[nodiscard]] std::shared_ptr<Node<T, Internal_allocator>> backward(std::int64_t id) const override
@@ -884,12 +898,13 @@ namespace oc::deriv {
 
             [[nodiscard]] T compute() const override
             {
+                using std::atan;
                 T d{ n_->compute() };
                 if (d == T{}) {
                     throw std::overflow_error{ "division by zero" };
                 }
 
-                return std::atan(d / n_->compute());
+                return atan(d / n_->compute());
             }
 
             [[nodiscard]] std::shared_ptr<Node<T, Internal_allocator>> backward(std::int64_t id) const override
