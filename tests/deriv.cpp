@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <cmath>
+#include <sstream>
 
 #include <oc/deriv.h>
 
@@ -670,4 +671,21 @@ TEST(Algorithms_test, can_perform_backward_derivation)
         EXPECT_EQ(2.f * std::cos(28.f) - 12.f * 12.f * std::sin(28.f), z2->backward(0)->backward(0)->compute());
         EXPECT_EQ(9.f * std::cos(28.f), z2->backward(1)->compute());
     }
+}
+
+TEST(Derivation, can_print_a_complex_function)
+{
+    using namespace oc::deriv;
+
+    auto x = variable(0, 0.0);
+    auto y = variable(1, 0.0);
+
+    auto f = ln(x + y) ^ 2.0;
+
+    auto g = f ^ sin((x + y) * x);
+
+    std::stringstream ss;
+    ss << g;
+
+    EXPECT_EQ(ss.str(), "((ln((x0+x1)))^2)^(sin(((x0+x1)*x0)))");
 }

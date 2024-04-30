@@ -6,6 +6,7 @@
 #include <memory>
 #include <type_traits>
 #include <cmath>
+#include <ostream>
 
 namespace oc::deriv {
     namespace details {
@@ -21,7 +22,13 @@ namespace oc::deriv {
             [[nodiscard]] virtual T compute() const = 0;
             [[nodiscard]] virtual std::shared_ptr<Node<T, Internal_allocator>> backward(std::int64_t id) const = 0;
             virtual void set(T value) {}
+            [[nodiscard]] virtual std::ostream& print(std::ostream& os) const = 0;
         };
+        template <template<typename> typename Internal_allocator = std::allocator , typename T>
+        std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Node<T, Internal_allocator>>& n)
+        {
+            return n->print(os);
+        }
 
         template <typename T, template<typename> typename Internal_allocator = std::allocator>
         class Const : public Node<T, Internal_allocator>{
@@ -37,6 +44,12 @@ namespace oc::deriv {
             std::shared_ptr<Node<T, Internal_allocator>> backward(std::int64_t id) const override
             {
                 return make_node<Const<T, Internal_allocator>, Internal_allocator>(T{ 0 });
+            }
+
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << value_;
+                return os;
             }
 
         private:
@@ -71,6 +84,12 @@ namespace oc::deriv {
                     make_node<Const<T, Internal_allocator>, Internal_allocator>(T{ 0 });
             }
 
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << 'x' << id_;
+                return os;
+            }
+
         private:
             std::int64_t id_;
             T value_;
@@ -95,6 +114,12 @@ namespace oc::deriv {
             [[nodiscard]] std::shared_ptr<Node<T, Internal_allocator>> backward(std::int64_t id) const override
             {
                 return make_node<Add<T, Internal_allocator>, Internal_allocator>(n1_->backward(id), n2_->backward(id));
+            }
+
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << '(' << n1_ << '+' << n2_ << ')';
+                return os;
             }
 
         private:
@@ -138,6 +163,12 @@ namespace oc::deriv {
                 return make_node<Sub<T, Internal_allocator>, Internal_allocator>(n1_->backward(id), n2_->backward(id));
             }
 
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << '(' << n1_ << '-' << n2_ << ')';
+                return os;
+            }
+
         private:
             std::shared_ptr<Node<T, Internal_allocator>> n1_;
             std::shared_ptr<Node<T, Internal_allocator>> n2_;
@@ -179,6 +210,12 @@ namespace oc::deriv {
                 return make_node<Neg<T, Internal_allocator>, Internal_allocator>(n_->backward(id));
             }
 
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << '(' << '-' << '(' << n_ << ')' << ')';
+                return os;
+            }
+
         private:
             std::shared_ptr<Node<T, Internal_allocator>> n_;
         };
@@ -209,6 +246,12 @@ namespace oc::deriv {
                 return make_node<Add<T, Internal_allocator>, Internal_allocator>(
                     make_node<Mul<T, Internal_allocator>, Internal_allocator>(n1_->backward(id), n2_),
                     make_node<Mul<T, Internal_allocator>, Internal_allocator>(n1_, n2_->backward(id)));
+            }
+
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << '(' << n1_ << '*' << n2_ << ')';
+                return os;
             }
         private:
             std::shared_ptr<Node<T, Internal_allocator>> n1_;
@@ -259,6 +302,12 @@ namespace oc::deriv {
                         make_node<Mul<T, Internal_allocator>, Internal_allocator>(n1_, n2_->backward(id))),
                     make_node<Mul<T, Internal_allocator>, Internal_allocator>(n2_, n2_));
             }
+
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << '(' << n1_ << '/' << n2_ << ')';
+                return os;
+            }
         private:
             std::shared_ptr<Node<T, Internal_allocator>> n1_;
             std::shared_ptr<Node<T, Internal_allocator>> n2_;
@@ -305,6 +354,12 @@ namespace oc::deriv {
                     make_node<Cos<T, Internal_allocator>, Internal_allocator>(n_));
             }
 
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << "sin(" << n_ << ')';
+                return os;
+            }
+
         private:
             std::shared_ptr<Node<T, Internal_allocator>> n_;
         };
@@ -331,6 +386,12 @@ namespace oc::deriv {
                     n_->backward(id),
                     make_node<Neg<T, Internal_allocator>, Internal_allocator>(
                         make_node<Sin<T, Internal_allocator>, Internal_allocator>(n_)));
+            }
+
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << "cos(" << n_ << ')';
+                return os;
             }
 
         private:
@@ -365,6 +426,12 @@ namespace oc::deriv {
                         make_node<Sec<T, Internal_allocator>, Internal_allocator>(n_)));
             }
 
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << "tan(" << n_ << ')';
+                return os;
+            }
+
         private:
             std::shared_ptr<Node<T, Internal_allocator>> n_;
         };
@@ -397,6 +464,12 @@ namespace oc::deriv {
                     make_node<Mul<T, Internal_allocator>, Internal_allocator>(
                         make_node<Sec<T, Internal_allocator>, Internal_allocator>(n_),
                         make_node<Tan<T, Internal_allocator>, Internal_allocator>(n_)));
+            }
+
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << "sec(" << n_ << ')';
+                return os;
             }
 
         private:
@@ -437,6 +510,12 @@ namespace oc::deriv {
                             make_node<Csc<T, Internal_allocator>, Internal_allocator>(n_))));
             }
 
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << "cot(" << n_ << ')';
+                return os;
+            }
+
         private:
             std::shared_ptr<Node<T, Internal_allocator>> n_;
         };
@@ -472,6 +551,12 @@ namespace oc::deriv {
                             make_node<Cot<T, Internal_allocator>, Internal_allocator>(n_))));
             }
 
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << "csc(" << n_ << ')';
+                return os;
+            }
+
         private:
             std::shared_ptr<Node<T, Internal_allocator>> n_;
         };
@@ -497,6 +582,12 @@ namespace oc::deriv {
                 return make_node<Mul<T, Internal_allocator>, Internal_allocator>(
                     n_->backward(id),
                     make_node<Exp<T, Internal_allocator>, Internal_allocator>(n_));
+            }
+
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << "exp(" << n_ << ')';
+                return os;
             }
 
         private:
@@ -531,6 +622,12 @@ namespace oc::deriv {
                     n_);
             }
 
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << "ln(" << n_ << ')';
+                return os;
+            }
+
         private:
             std::shared_ptr<Node<T, Internal_allocator>> n_;
         };
@@ -558,6 +655,12 @@ namespace oc::deriv {
                     make_node<Mul<T, Internal_allocator>, Internal_allocator>(
                         make_node<Const<T, Internal_allocator>, Internal_allocator>(n_),
                         make_node<Pow_fn<T, Internal_allocator>, Internal_allocator>(f_, n_ - T{ 1 })));
+            }
+
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << '(' << f_ << ")^" << n_;
+                return os;
             }
 
         private:
@@ -593,6 +696,12 @@ namespace oc::deriv {
                     make_node<Mul<T, Internal_allocator>, Internal_allocator>(
                         make_node<Pow_af<T, Internal_allocator>, Internal_allocator>(a_, f_),
                         make_node<Const<T, Internal_allocator>, Internal_allocator>(log(a_))));
+            }
+
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << a_ << "^(" << f_ << ')';
+                return os;
             }
 
         private:
@@ -634,6 +743,12 @@ namespace oc::deriv {
                             n2_->backward(0))));
             }
 
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << '(' << n1_ << ")^" << '(' << n2_ << ')';
+                return os;
+            }
+
         private:
             std::shared_ptr<Node<T, Internal_allocator>> n1_;
             std::shared_ptr<Node<T, Internal_allocator>> n2_;
@@ -671,6 +786,12 @@ namespace oc::deriv {
                         T{ -0.5 }));
             }
 
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << "asin(" << n_ << ')';
+                return os;
+            }
+
         private:
             std::shared_ptr<Node<T, Internal_allocator>> n_;
         };
@@ -703,6 +824,12 @@ namespace oc::deriv {
                             T{ -0.5 })));
             }
 
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << "acos(" << n_ << ')';
+                return os;
+            }
+
         private:
             std::shared_ptr<Node<T, Internal_allocator>> n_;
         };
@@ -732,6 +859,12 @@ namespace oc::deriv {
                             make_node<Const<T, Internal_allocator>, Internal_allocator>(T{ 1 }),
                             make_node<Pow_fn<T, Internal_allocator>, Internal_allocator>(n_, T{ 2 })),
                         T{ -1 }));
+            }
+
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << "atan(" << n_ << ')';
+                return os;
             }
 
         private:
@@ -769,6 +902,12 @@ namespace oc::deriv {
                                 make_node<Const<T, Internal_allocator>, Internal_allocator>(T{ 1 }),
                                 make_node<Pow_fn<T, Internal_allocator>, Internal_allocator>(n_, T{ 2 })),
                             T{ -1 })));
+            }
+
+            std::ostream& print(std::ostream& os) const override
+            {
+                os << "acot(" << n_ << ')';
+                return os;
             }
 
         private:
