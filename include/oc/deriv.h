@@ -701,6 +701,7 @@ namespace oc::deriv {
 
             [[nodiscard]] std::shared_ptr<Node<T, Internal_allocator>> backward(std::int64_t id) const override
             {
+                using std::log;
                 return make_node<Mul<T, Internal_allocator>, Internal_allocator>(
                     f_->backward(id),
                     make_node<Mul<T, Internal_allocator>, Internal_allocator>(
