@@ -86,7 +86,7 @@ namespace oc::deriv {
 
             std::ostream& print(std::ostream& os) const override
             {
-                os << 'x' << id_;
+                os << "x_" << id_;
                 return os;
             }
 
