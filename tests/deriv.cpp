@@ -633,9 +633,9 @@ TEST(Algorithms_test, can_perform_backward_derivation)
                 std::make_shared<D_add>(
                     std::make_shared<D_mul>(x, x),
                     std::make_shared<D_mul>(
-                        std::make_shared<D_const>(3.0),
+                        std::make_shared<D_const>(3.0f),
                         std::make_shared<D_mul>(x, y))),
-                std::make_shared<D_const>(1.0)));
+                std::make_shared<D_const>(1.0f)));
 
         EXPECT_EQ(std::sin(28.f), z->compute());
         EXPECT_EQ(12.f * std::cos(28.f), z->backward(0)->compute());
