@@ -684,3 +684,31 @@ TEST(Derivation, can_print_a_complex_function)
 
     EXPECT_EQ(ss.str(), "((ln((x_0+x_1)))^(2))^(sin(((x_0+x_1)*x_0)))");
 }
+
+namespace oc::deriv::details {
+[[nodiscard]] auto operator+(std::integral auto d, const std::string& s)
+{
+    return std::to_string(d) + s;
+}
+
+template <>
+[[nodiscard]] auto zero_value<std::string>()
+{
+    return std::string{};
+}
+}
+
+TEST(Derivation, can_derive_by_multiple_types)
+{
+    using namespace oc::deriv;
+
+    auto x = variable(0, 5);
+    auto y = variable(1, std::string{"str"});
+
+    auto z = x + y;
+
+    EXPECT_EQ(z->compute(), "5str");
+
+    EXPECT_EQ(z->backward(0)->compute(), "1");
+
+}
