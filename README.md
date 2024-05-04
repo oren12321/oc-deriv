@@ -11,16 +11,17 @@ Usage example:
 using namespace oc::deriv;
 
 // Using Node types:
-auto x = std::make_shared<Var<float>>(0, 3.f);
-auto y = std::make_shared<Var<float>>(1, 2.f);
-auto z = std::make_shared<Sin<float>>(
-    std::make_shared<Add<float>>(
-        std::make_shared<Add<float>>(
-            std::make_shared<Add<float>>(x, x),
-            std::make_shared<Mul<float>>(
-                std::make_shared<Const<float>>(3.f),
-                std::make_shared<Mul<float>>(x, y))),
-        std::make_shared<Const<float>>(1.f)));
+auto x = std::make_shared<Var<float>>(0, 3.0f);
+auto y = std::make_shared<Var<float>>(1, 2.0f);
+auto z = std::make_shared<
+    Sin<Add<Add<Mul<Var<float>, Var<float>>, Mul<Const<float>, Mul<Var<float>, Var<float>>>>, Const<float>>>>(
+    std::make_shared<
+        Add<Add<Mul<Var<float>, Var<float>>, Mul<Const<float>, Mul<Var<float>, Var<float>>>>, Const<float>>>(
+        std::make_shared<Add<Mul<Var<float>, Var<float>>, Mul<Const<float>, Mul<Var<float>, Var<float>>>>>(
+            std::make_shared<Mul<Var<float>, Var<float>>>(x, x),
+            std::make_shared<Mul<Const<float>, Mul<Var<float>, Var<float>>>>(
+                std::make_shared<Const<float>>(3.0f), std::make_shared<Mul<Var<float>, Var<float>>>(x, y))),
+        std::make_shared<Const<float>>(1.0f)));
 
 // Using functions:
 auto x = variable(0, 3.f);
