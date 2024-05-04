@@ -70,7 +70,7 @@ TEST(Derivation, addition_backward_derivative)
     {
 
         using D_var = Var<float>;
-        using D_add = Add<float>;
+        using D_add = Add<Var<float>, Var<float>>;
 
         std::shared_ptr<D_var> v1 = std::make_shared<D_var>(0, 1.f);
         std::shared_ptr<D_var> v2 = std::make_shared<D_var>(0, 1.f);
@@ -115,7 +115,7 @@ TEST(Derivation, subtraction_backward_derivative)
     {
 
         using D_var = Var<float>;
-        using D_sub = Sub<float>;
+        using D_sub = Sub<Var<float>, Var<float>>;
 
         std::shared_ptr<D_var> v1 = std::make_shared<D_var>(0, 1.f);
         std::shared_ptr<D_var> v2 = std::make_shared<D_var>(0, 1.f);
@@ -160,7 +160,7 @@ TEST(Derivation, negation_backward_derivative)
     {
 
         using D_var = Var<float>;
-        using D_neg = Neg<float>;
+        using D_neg = Neg<Var<float>>;
 
         std::shared_ptr<D_var> v = std::make_shared<D_var>(0, 1.f);
 
@@ -193,7 +193,7 @@ TEST(Derivation, multiplication_backward_derivative)
     {
 
         using D_var = Var<float>;
-        using D_mul = Mul<float>;
+        using D_mul = Mul<Var<float>, Var<float>>;
 
         std::shared_ptr<D_var> v1 = std::make_shared<D_var>(0, 1.f);
         std::shared_ptr<D_var> v2 = std::make_shared<D_var>(0, 1.f);
@@ -238,7 +238,7 @@ TEST(Derivation, division_backward_derivative)
     {
 
         using D_var = Var<float>;
-        using D_div = Div<float>;
+        using D_div = Div<Var<float>, Var<float>>;
 
         std::shared_ptr<D_var> v1 = std::make_shared<D_var>(0, 1.f);
         std::shared_ptr<D_var> v2 = std::make_shared<D_var>(0, 1.f);
@@ -283,8 +283,8 @@ TEST(Derivation, sin_and_cos_backward_derivative)
     {
 
         using D_var = Var<float>;
-        using D_sin = Sin<float>;
-        using D_cos = Cos<float>;
+        using D_sin = Sin<Var<float>>;
+        using D_cos = Cos<Var<float>>;
 
         std::shared_ptr<D_var> v = std::make_shared<D_var>(0, 1.f);
 
@@ -318,8 +318,8 @@ TEST(Derivation, tan_and_sec_backward_derivative)
     {
 
         using D_var = Var<float>;
-        using D_tan = Tan<float>;
-        using D_sec = Sec<float>;
+        using D_tan = Tan<Var<float>>;
+        using D_sec = Sec<Var<float>>;
 
         std::shared_ptr<D_var> v = std::make_shared<D_var>(0, 1.f);
 
@@ -353,8 +353,8 @@ TEST(Derivation, cot_and_csc_backward_derivative)
     {
 
         using D_var = Var<float>;
-        using D_cot = Cot<float>;
-        using D_csc = Csc<float>;
+        using D_cot = Cot<Var<float>>;
+        using D_csc = Csc<Var<float>>;
 
         std::shared_ptr<D_var> v = std::make_shared<D_var>(0, 1.f);
 
@@ -388,8 +388,8 @@ TEST(Derivation, exp_and_ln_backward_derivative)
     {
 
         using D_var = Var<float>;
-        using D_exp = Exp<float>;
-        using D_ln = Ln<float>;
+        using D_exp = Exp<Var<float>>;
+        using D_ln = Ln<Var<float>>;
 
         std::shared_ptr<D_var> v = std::make_shared<D_var>(0, 1.f);
 
@@ -423,7 +423,7 @@ TEST(Derivation, pow_f_by_n_backward_derivative)
     {
 
         using D_var = Var<float>;
-        using D_pow = Pow_fn<float>;
+        using D_pow = Pow_fn<Var<float>, float>;
 
         std::shared_ptr<D_var> v = std::make_shared<D_var>(0, 1.f);
 
@@ -453,7 +453,7 @@ TEST(Derivation, pow_a_by_f_backward_derivative)
     {
 
         using D_var = Var<float>;
-        using D_pow = Pow_af<float>;
+        using D_pow = Pow_af<float, Var<float>>;
 
         std::shared_ptr<D_var> v = std::make_shared<D_var>(0, 1.f);
 
@@ -484,7 +484,7 @@ TEST(Derivation, pow_f_by_g_backward_derivative)
 
         using D_var = Var<float>;
         using D_const = Const<float>;
-        using D_pow = Pow_fg<float>;
+        using D_pow = Pow_fg<Var<float>, Const<float>>;
 
         std::shared_ptr<D_var> v = std::make_shared<D_var>(0, 1.f);
         std::shared_ptr<D_const> c = std::make_shared<D_const>(2.f);
@@ -516,7 +516,7 @@ TEST(Derivation, asin_backward_derivative)
     {
 
         using D_var = Var<float>;
-        using D_asin = Asin<float>;
+        using D_asin = Asin<Var<float>>;
 
         std::shared_ptr<D_var> v = std::make_shared<D_var>(0, 1.f);
 
@@ -542,7 +542,7 @@ TEST(Derivation, acos_backward_derivative)
     {
 
         using D_var = Var<float>;
-        using D_acos = Acos<float>;
+        using D_acos = Acos<Var<float>>;
 
         std::shared_ptr<D_var> v = std::make_shared<D_var>(0, 1.f);
 
@@ -568,7 +568,7 @@ TEST(Derivation, atan_backward_derivative)
     {
 
         using D_var = Var<float>;
-        using D_atan = Atan<float>;
+        using D_atan = Atan<Var<float>>;
 
         std::shared_ptr<D_var> v = std::make_shared<D_var>(0, 1.f);
 
@@ -594,7 +594,7 @@ TEST(Derivation, acot_backward_derivative)
     {
 
         using D_var = Var<float>;
-        using D_acot = Acot<float>;
+        using D_acot = Acot<Var<float>>;
 
         std::shared_ptr<D_var> v = std::make_shared<D_var>(0, 1.f);
 
@@ -612,30 +612,25 @@ TEST(Derivation, acot_backward_derivative)
     }
 }
 
-TEST(Algorithms_test, can_perform_backward_derivation)
+TEST(Derivation, can_perform_backward_derivation)
 {
     using namespace oc::deriv;
 
 
     {
-        using D_node = Node<float>;
-        using D_var = Var<float>;
-        using D_add = Add<float>;
-        using D_mul = Mul<float>;
-        using D_const = Const<float>;
-        using D_sin = Sin<float>;
-
         // z = sin(x^2 + 3xy + 1)
-        std::shared_ptr<D_node> x = std::make_shared<D_var>(0, 3.0f);
-        std::shared_ptr<D_node> y = std::make_shared<D_var>(1, 2.0f);
-        std::shared_ptr<D_node> z = std::make_shared<D_sin>(
-            std::make_shared<D_add>(
-                std::make_shared<D_add>(
-                    std::make_shared<D_mul>(x, x),
-                    std::make_shared<D_mul>(
-                        std::make_shared<D_const>(3.0f),
-                        std::make_shared<D_mul>(x, y))),
-                std::make_shared<D_const>(1.0f)));
+        auto x = std::make_shared<Var<float>>(0, 3.0f);
+        auto y = std::make_shared<Var<float>>(1, 2.0f);
+
+        auto z = std::make_shared<
+            Sin<Add<Add<Mul<Var<float>, Var<float>>, Mul<Const<float>, Mul<Var<float>, Var<float>>>>, Const<float>>>>(
+            std::make_shared<
+                Add<Add<Mul<Var<float>, Var<float>>, Mul<Const<float>, Mul<Var<float>, Var<float>>>>, Const<float>>>(
+                std::make_shared<Add<Mul<Var<float>, Var<float>>, Mul<Const<float>, Mul<Var<float>, Var<float>>>>>(
+                    std::make_shared<Mul<Var<float>, Var<float>>>(x, x),
+                    std::make_shared<Mul<Const<float>, Mul<Var<float>, Var<float>>>>(
+                        std::make_shared<Const<float>>(3.0f), std::make_shared<Mul<Var<float>, Var<float>>>(x, y))),
+                std::make_shared<Const<float>>(1.0f)));
 
         EXPECT_EQ(std::sin(28.f), z->compute());
         EXPECT_EQ(12.f * std::cos(28.f), z->backward(0)->compute());
