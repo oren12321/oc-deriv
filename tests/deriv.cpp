@@ -3,6 +3,9 @@
 #include <memory>
 #include <cmath>
 #include <sstream>
+#include <vector>
+#include <algorithm>
+#include <numeric>
 
 #include <oc/deriv.h>
 
@@ -711,4 +714,23 @@ TEST(Derivation, can_derive_by_multiple_types)
 
     EXPECT_EQ(z->backward(0)->compute(), "1");
 
+}
+
+TEST(Derivation, can_derive_collection_by_single_type)
+{
+    using namespace oc::deriv;
+
+    auto x = variable(0, 5.0);
+
+    auto f1 = x ^ 2.0;
+    auto f2 = x + 1.0;
+
+    std::vector<std::shared_ptr<Node<double>>> fs = {f1, f2, f1 + f2};
+    std::vector<std::shared_ptr<Node<double>>> dfs;
+
+    auto sum = std::transform_reduce(fs.cbegin(), fs.cend(), 0.0, std::plus<>{}, [](const auto& node) {
+        return node->backward(0)->compute();
+    });
+
+    EXPECT_EQ(sum, 22.0);
 }
