@@ -155,11 +155,7 @@ namespace oc::deriv {
 
             [[nodiscard]] std::shared_ptr<Node<value_type>> backward(std::int64_t id) const override
             {
-                using n1_type = typename decltype(n1_->backward(id))::element_type;
-                using n2_type = typename decltype(n2_->backward(id))::element_type;
-
-                return make_node<Add<n1_type, n2_type, Internal_allocator>, Internal_allocator>(
-                    n1_->backward(id), n2_->backward(id));
+                return n1_->backward(id) + n2_->backward(id);
             }
 
             std::ostream& print(std::ostream& os) const override
@@ -210,11 +206,7 @@ namespace oc::deriv {
 
             [[nodiscard]] std::shared_ptr<Node<value_type>> backward(std::int64_t id) const override
             {
-                using n1_type = typename decltype(n1_->backward(id))::element_type;
-                using n2_type = typename decltype(n2_->backward(id))::element_type;
-
-                return make_node<Sub<n1_type, n2_type, Internal_allocator>, Internal_allocator>(
-                    n1_->backward(id), n2_->backward(id));
+                return n1_->backward(id) - n2_->backward(id);
             }
 
             std::ostream& print(std::ostream& os) const override
@@ -265,9 +257,7 @@ namespace oc::deriv {
 
             [[nodiscard]] std::shared_ptr<Node<value_type>> backward(std::int64_t id) const override
             {
-                using n_type = typename decltype(n_->backward(id))::element_type;
-
-                return make_node<Neg<n_type, Internal_allocator>, Internal_allocator>(n_->backward(id));
+                return -n_->backward(id);
             }
 
             std::ostream& print(std::ostream& os) const override
@@ -305,11 +295,6 @@ namespace oc::deriv {
 
             [[nodiscard]] std::shared_ptr<Node<value_type>> backward(std::int64_t id) const override
             {
-                using n1_type = typename decltype(n1_->backward(id))::element_type;
-                using n2_type = typename decltype(n2_->backward(id))::element_type;
-
-                /*return make_node<Mul<n1_type, N2, Internal_allocator>, Internal_allocator>(n1_->backward(id), n2_)
-                    + make_node<Mul<N1, n2_type, Internal_allocator>, Internal_allocator>(n1_, n2_->backward(id));*/
                 return n1_->backward(id) * n2_ + n1_ * n2_->backward(id);
             }
 
@@ -365,13 +350,7 @@ namespace oc::deriv {
 
             [[nodiscard]] std::shared_ptr<Node<value_type>> backward(std::int64_t id) const override
             {
-                using n1_type = typename decltype(n1_->backward(id) * n2_ - n1_ * n2_->backward(id))::element_type;
-                using n2_type = typename decltype(n2_ * n2_)::element_type;
-
-                /*return make_node<Div<n1_type, n2_type, Internal_allocator>, Internal_allocator>(
-                    n1_->backward(id) * n2_ - n1_ * n2_->backward(id), n2_ * n2_);*/
-                //return make_node<Div<N1, N2, Internal_allocator>, Internal_allocator>(nullptr, nullptr);
-                return (n1_->backward(id) / n2_) - ((n1_ / n2_) * (n2_->backward(id) / n2_));
+                return (n1_->backward(id) * n2_ - n1_ * n2_->backward(id)) / (n2_ * n2_);
             }
 
             std::ostream& print(std::ostream& os) const override
@@ -657,7 +636,7 @@ namespace oc::deriv {
 
             [[nodiscard]] std::shared_ptr<Node<value_type>> backward(std::int64_t id) const override
             {
-                return n_->backward(id) * exp(n_);//make_node<Exp<N, Internal_allocator>, Internal_allocator>(n_);
+                return n_->backward(id) * exp(n_);
             }
 
             std::ostream& print(std::ostream& os) const override
@@ -732,10 +711,7 @@ namespace oc::deriv {
 
             [[nodiscard]] std::shared_ptr<Node<value_type>> backward(std::int64_t id) const override
             {
-                return f_->backward(id)
-                    * (make_node<Const<T, Internal_allocator>, Internal_allocator>(n_)
-                        * make_node<Pow_fn<N, decltype(n_ - unit_value<T>()), Internal_allocator>, Internal_allocator>(
-                            f_, n_ - unit_value<T>()));
+                return f_->backward(id) * n_ * (f_ ^ (n_ - unit_value<T>()));
             }
 
             std::ostream& print(std::ostream& os) const override
@@ -745,7 +721,7 @@ namespace oc::deriv {
             }
 
         private:
-            std::shared_ptr<N> f_;
+            std::shared_ptr<Node<typename N::value_type>> f_;
             T n_;
         };
         template <node_type N, typename T, template<typename> typename Internal_allocator = std::allocator>
@@ -777,9 +753,7 @@ namespace oc::deriv {
             [[nodiscard]] std::shared_ptr<Node<value_type>> backward(std::int64_t id) const override
             {
                 using std::log;
-                return f_->backward(id)
-                    * (make_node<Pow_af<T, N, Internal_allocator>, Internal_allocator>(a_, f_)
-                        * make_node<Const<T, Internal_allocator>, Internal_allocator>(log(a_)));
+                return f_->backward(id) * (a_ ^ f_) * log(a_);
             }
 
             std::ostream& print(std::ostream& os) const override
@@ -790,7 +764,7 @@ namespace oc::deriv {
 
         private:
             T a_;
-            std::shared_ptr<N> f_;
+            std::shared_ptr<Node<typename N::value_type>> f_;
         };
         template <typename T, node_type N, template<typename> typename Internal_allocator = std::allocator>
         [[nodiscard]] auto pow(const T& a, const std::shared_ptr<N>& f)
@@ -820,8 +794,7 @@ namespace oc::deriv {
 
             [[nodiscard]] std::shared_ptr<Node<value_type>> backward(std::int64_t id) const override
             {
-                return /*make_node<Pow_fg<N1, N2, Internal_allocator>, Internal_allocator>(n1_, n2_)*/(n1_ ^ n2_)
-                    * (((n2_ / n1_) * n1_->backward(id)) + (ln(n1_) * n2_->backward(id)));
+                return (n1_ ^ n2_) * ((n2_ / n1_) * n1_->backward(id) + ln(n1_) * n2_->backward(id));
             }
 
             std::ostream& print(std::ostream& os) const override
@@ -863,10 +836,8 @@ namespace oc::deriv {
             [[nodiscard]] std::shared_ptr<Node<value_type>> backward(std::int64_t id) const override
             {
                 return n_->backward(id)
-                    * pow((make_node<Const<decltype(n_->compute()), Internal_allocator>, Internal_allocator>(
-                               unit_value<decltype(n_->compute())>())
-                              - pow(n_, full_value<decltype(n_->compute())>(2))),
-                        full_value<decltype(n_->compute())>(-0.5));
+                    * ((constant(unit_value<decltype(n_->compute())>()) - (n_ ^ full_value<decltype(n_->compute())>(2)))
+                        ^ full_value<decltype(n_->compute())>(-0.5));
             }
 
             std::ostream& print(std::ostream& os) const override
@@ -902,10 +873,9 @@ namespace oc::deriv {
             [[nodiscard]] std::shared_ptr<Node<value_type>> backward(std::int64_t id) const override
             {
                 return n_->backward(id)
-                    * (-(pow((make_node<Const<decltype(n_->compute()), Internal_allocator>, Internal_allocator>(
-                                  unit_value<decltype(n_->compute())>())
-                                 - pow(n_, full_value<decltype(n_->compute())>(2))),
-                        full_value<decltype(n_->compute())>(-0.5))));
+                    * (-(((constant(unit_value<decltype(n_->compute())>())
+                              - (n_ ^ full_value<decltype(n_->compute())>(2)))
+                        ^ full_value<decltype(n_->compute())>(-0.5))));
             }
 
             std::ostream& print(std::ostream& os) const override
@@ -941,10 +911,8 @@ namespace oc::deriv {
             [[nodiscard]] std::shared_ptr<Node<value_type>> backward(std::int64_t id) const override
             {
                 return n_->backward(id)
-                    * pow((make_node<Const<decltype(n_->compute()), Internal_allocator>, Internal_allocator>(
-                               unit_value<decltype(n_->compute())>())
-                              + pow(n_, full_value<decltype(n_->compute())>(2))),
-                        full_value<decltype(n_->compute())>(-1));
+                    * ((constant(unit_value<decltype(n_->compute())>()) + (n_ ^ full_value<decltype(n_->compute())>(2)))
+                        ^ full_value<decltype(n_->compute())>(-1));
             }
 
             std::ostream& print(std::ostream& os) const override
@@ -985,10 +953,9 @@ namespace oc::deriv {
             [[nodiscard]] std::shared_ptr<Node<value_type>> backward(std::int64_t id) const override
             {
                 return n_->backward(id)
-                    * (-(pow((make_node<Const<decltype(n_->compute()), Internal_allocator>, Internal_allocator>(
-                                  unit_value<decltype(n_->compute())>())
-                                 + pow(n_, full_value<decltype(n_->compute())>(-1))),
-                        full_value<decltype(n_->compute())>(-1))));
+                    * (-(((constant(unit_value<decltype(n_->compute())>())
+                              + (n_ ^ full_value<decltype(n_->compute())>(-1)))
+                        ^ full_value<decltype(n_->compute())>(-1))));
             }
 
             std::ostream& print(std::ostream& os) const override
