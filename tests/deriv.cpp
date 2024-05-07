@@ -723,7 +723,7 @@ TEST(Derivation, can_derive_collection_by_single_type)
     auto x = variable(0, 5.0);
 
     auto f1 = x ^ 2.0;
-    auto f2 = x + 1.0;
+    auto f2 = 1.0 + x;
 
     std::vector<std::shared_ptr<Node<double>>> fs = {f1, f2, f1 + f2};
     std::vector<std::shared_ptr<Node<double>>> dfs;
