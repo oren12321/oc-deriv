@@ -89,7 +89,7 @@ namespace details {
             : type_(type)
         { }
 
-        virtual void set(const T&) { }
+        virtual void set(std::int64_t, const T&) { }
         virtual value_type compute() const = 0;
         virtual std::shared_ptr<Node<T, Internal_allocator>> backward(std::int64_t id) const = 0;
         virtual std::ostream& print(std::ostream& os) const = 0;
@@ -165,9 +165,11 @@ namespace details {
             , value_(value)
         { }
 
-        void set(const value_type& value) override
+        void set(std::int64_t id, const value_type& value) override
         {
-            value_ = value;
+            if (id == id_) {
+                value_ = value;
+            }
         }
 
         value_type compute() const override

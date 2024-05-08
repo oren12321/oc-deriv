@@ -46,7 +46,7 @@ TEST(Derivation, variable_backward_derivative)
         EXPECT_EQ(1.f, v->compute());
         EXPECT_EQ(1.f, v->backward(0)->compute());
 
-        v->set(2.f);
+        v->set(0, 2.f);
 
         EXPECT_EQ(2.f, v->compute());
         EXPECT_EQ(1.f, v->backward(0)->compute());
@@ -58,7 +58,7 @@ TEST(Derivation, variable_backward_derivative)
         EXPECT_EQ(1.f, v->compute());
         EXPECT_EQ(1.f, v->backward(0)->compute());
 
-        v->set(2.f);
+        v->set(0, 2.f);
 
         EXPECT_EQ(2.f, v->compute());
         EXPECT_EQ(1.f, v->backward(0)->compute());
