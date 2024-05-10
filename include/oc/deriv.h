@@ -11,19 +11,19 @@
 namespace oc::deriv {
 namespace details {
     template <typename T>
-    [[nodiscard]] auto zero_value()
+    [[nodiscard]] T zero_value()
     {
         return T{0};
     }
 
     template <typename T>
-    [[nodiscard]] auto unit_value()
+    [[nodiscard]] T unit_value()
     {
         return T{1};
     }
 
     template <typename T>
-    [[nodiscard]] auto full_value(const T& value)
+    [[nodiscard]] T full_value(const T& value)
     {
         return T{value};
     }
@@ -38,17 +38,6 @@ namespace details {
     {
         return n->print(os);
     }
-
-    template <typename, typename>
-    struct replace_targ { };
-
-    template <typename A, template <typename> typename C, typename B>
-    struct replace_targ<A, C<B>> {
-        using type = C<A>;
-    };
-
-    template <typename R, typename T>
-    using replace_targ_t = typename replace_targ<R, T>::type;
 
     enum class NodeType {
         acos,
@@ -109,17 +98,11 @@ namespace details {
         return std::allocate_shared<N>(typename N::allocator_type{}, std::forward<Args>(args)...);
     }
 
-    template <node_type N>
-    [[nodiscard]] auto compute_of()
-    {
-        return ((N*)nullptr)->compute();
-    }
-
     template <typename T, typename Internal_allocator = std::allocator<T>>
     class Const : public Node<T, Internal_allocator> {
     public:
-        using value_type = T;
-        using allocator_type = Internal_allocator;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         explicit Const(const T& value)
             : Node<value_type, allocator_type>(NodeType::constant)
@@ -133,8 +116,6 @@ namespace details {
 
         std::shared_ptr<Node<value_type, allocator_type>> backward(std::int64_t) const override
         {
-            static_assert(std::is_same_v<value_type, decltype(zero_value<value_type>())>);
-
             return make_node<Const<value_type, allocator_type>>(zero_value<value_type>());
         }
 
@@ -156,8 +137,8 @@ namespace details {
     template <typename T, typename Internal_allocator = std::allocator<T>>
     class Var : public Node<T, Internal_allocator> {
     public:
-        using value_type = T;
-        using allocator_type = Internal_allocator;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         explicit Var(std::int64_t id, const value_type& value = zero_value<value_type>())
             : Node<value_type, allocator_type>(NodeType::variable)
@@ -179,9 +160,6 @@ namespace details {
 
         std::shared_ptr<Node<value_type, allocator_type>> backward(std::int64_t id) const override
         {
-            static_assert(std::is_same_v<value_type, decltype(zero_value<T>())>);
-            static_assert(std::is_same_v<decltype(zero_value<T>()), decltype(unit_value<T>())>);
-
             return id_ == id ? make_node<Const<value_type, allocator_type>>(unit_value<T>())
                              : make_node<Const<value_type, allocator_type>>(zero_value<T>());
         }
@@ -202,14 +180,13 @@ namespace details {
         return make_node<Var<T, Internal_allocator>>(id, value);
     }
 
-    template <node_type N1, node_type N2>
-    class Add : public Node<decltype(compute_of<N1>() + compute_of<N2>()),
-                    replace_targ_t<decltype(compute_of<N1>() + compute_of<N2>()), typename N1::allocator_type>> {
+    template <typename T, typename Internal_allocator = std::allocator<T>>
+    class Add : public Node<T, Internal_allocator> {
     public:
-        using value_type = decltype(compute_of<N1>() + compute_of<N2>());
-        using allocator_type = replace_targ_t<value_type, typename N1::allocator_type>;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Add(const std::shared_ptr<N1>& n1, const std::shared_ptr<N2>& n2)
+        Add(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
             : Node<value_type, allocator_type>(NodeType::add)
             , n1_(n1)
             , n2_(n2)
@@ -232,56 +209,52 @@ namespace details {
         }
 
     private:
-        std::shared_ptr<Node<typename N1::value_type, typename N1::allocator_type>> n1_;
-        std::shared_ptr<Node<typename N2::value_type, typename N2::allocator_type>> n2_;
+        std::shared_ptr<Node<T, Internal_allocator>> n1_;
+        std::shared_ptr<Node<T, Internal_allocator>> n2_;
     };
-    template <node_type N1, node_type N2>
-    [[nodiscard]] auto add(std::shared_ptr<N1> n1, std::shared_ptr<N2> n2)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto add(
+        std::shared_ptr<Node<T, Internal_allocator>> n1, std::shared_ptr<Node<T, Internal_allocator>> n2)
     {
-        if constexpr (std::is_same_v<typename N1::value_type, typename N2::value_type>) {
-            if (n1->type() == NodeType::constant) {
-                auto c = std::dynamic_pointer_cast<Const<typename N1::value_type, typename N1::allocator_type>>(n1);
-                if (c && c->compute() == zero_value<typename N1::value_type>()) {
-                    return n2;
-                }
-            }
-
-            if (n2->type() == NodeType::constant) {
-                auto c = std::dynamic_pointer_cast<Const<typename N2::value_type, typename N2::allocator_type>>(n2);
-                if (c && c->compute() == zero_value<typename N2::value_type>()) {
-                    return n1;
-                }
+        if (n1->type() == NodeType::constant) {
+            auto c = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n1);
+            if (c && c->compute() == zero_value<T>()) {
+                return n2;
             }
         }
 
-        return make_node<Add<N1, N2>>(n1, n2);
+        if (n2->type() == NodeType::constant) {
+            auto c = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n2);
+            if (c && c->compute() == zero_value<T>()) {
+                return n1;
+            }
+        }
+
+        return make_node<Add<T, Internal_allocator>>(n1, n2);
     }
-    template <node_type N1, node_type N2>
-    [[nodiscard]] auto operator+(const std::shared_ptr<N1>& n1, const std::shared_ptr<N2>& n2)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto operator+(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
     {
-        return add<N1, N2>(n1, n2);
+        return add<T, Internal_allocator>(n1, n2);
     }
-    template <node_type N, typename T>
-    [[nodiscard]] auto operator+(const std::shared_ptr<N>& n1, const T& value)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto operator+(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const T& value)
     {
-        return add<N, Node<T, replace_targ_t<T, typename N::allocator_type>>>(
-            n1, make_node<Const<T, replace_targ_t<T, typename N::allocator_type>>>(value));
+        return add<T, Internal_allocator>(n1, make_node<Const<T, Internal_allocator>>(value));
     }
-    template <typename T, node_type N>
-    [[nodiscard]] auto operator+(const T& value, const std::shared_ptr<N>& n2)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto operator+(const T& value, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
     {
-        return add<Node<T, replace_targ_t<T, typename N::allocator_type>>, N>(
-            make_node<Const<T, replace_targ_t<T, typename N::allocator_type>>>(value), n2);
+        return add<T, Internal_allocator>(make_node<Const<T, Internal_allocator>>(value), n2);
     }
 
-    template <node_type N1, node_type N2>
-    class Sub : public Node<decltype(compute_of<N1>() - compute_of<N2>()),
-                    replace_targ_t<decltype(compute_of<N1>() - compute_of<N2>()), typename N1::allocator_type>> {
+    template <typename T, typename Internal_allocator = std::allocator<T>>
+    class Sub : public Node<T, Internal_allocator> {
     public:
-        using value_type = decltype(compute_of<N1>() - compute_of<N2>());
-        using allocator_type = replace_targ_t<value_type, typename N1::allocator_type>;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Sub(const std::shared_ptr<N1>& n1, const std::shared_ptr<N2>& n2)
+        Sub(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
             : Node<value_type, allocator_type>(NodeType::subtract)
             , n1_(n1)
             , n2_(n2)
@@ -304,55 +277,52 @@ namespace details {
         }
 
     private:
-        std::shared_ptr<Node<typename N1::value_type, typename N1::allocator_type>> n1_;
-        std::shared_ptr<Node<typename N2::value_type, typename N2::allocator_type>> n2_;
+        std::shared_ptr<Node<T, Internal_allocator>> n1_;
+        std::shared_ptr<Node<T, Internal_allocator>> n2_;
     };
-    template <node_type N1, node_type N2>
-    [[nodiscard]] auto subtract(const std::shared_ptr<N1>& n1, const std::shared_ptr<N2>& n2)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto subtract(
+        const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
     {
-        if constexpr (std::is_same_v<typename N1::value_type, typename N2::value_type>) {
-            if (n1->type() == NodeType::constant) {
-                auto c = std::dynamic_pointer_cast<Const<typename N1::value_type, typename N1::allocator_type>>(n1);
-                if (c && c->compute() == zero_value<typename N1::value_type>()) {
-                    return -n2;
-                }
-            }
-
-            if (n2->type() == NodeType::constant) {
-                auto c = std::dynamic_pointer_cast<Const<typename N2::value_type, typename N2::allocator_type>>(n2);
-                if (c && c->compute() == zero_value<typename N2::value_type>()) {
-                    return n1;
-                }
+        if (n1->type() == NodeType::constant) {
+            auto c = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n1);
+            if (c && c->compute() == zero_value<T>()) {
+                return -n2;
             }
         }
 
-        return make_node<Sub<N1, N2>>(n1, n2);
+        if (n2->type() == NodeType::constant) {
+            auto c = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n2);
+            if (c && c->compute() == zero_value<T>()) {
+                return n1;
+            }
+        }
+
+        return make_node<Sub<T, Internal_allocator>>(n1, n2);
     }
-    template <node_type N1, node_type N2>
-    [[nodiscard]] auto operator-(const std::shared_ptr<N1>& n1, const std::shared_ptr<N2>& n2)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto operator-(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
     {
-        return subtract<N1, N2>(n1, n2);
+        return subtract<T, Internal_allocator>(n1, n2);
     }
-    template <node_type N, typename T>
-    [[nodiscard]] auto operator-(const std::shared_ptr<N>& n1, const T& value)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto operator-(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const T& value)
     {
-        return subtract<N, Node<T, replace_targ_t<T, typename N::allocator_type>>>(
-            n1, make_node<Const<T, replace_targ_t<T, typename N::allocator_type>>>(value));
+        return subtract<T, Internal_allocator>(n1, make_node<Const<T, Internal_allocator>>(value));
     }
-    template <typename T, node_type N>
-    [[nodiscard]] auto operator-(const T& value, const std::shared_ptr<N>& n2)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto operator-(const T& value, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
     {
-        return subtract<Node<T, replace_targ_t<T, typename N::allocator_type>>, N>(
-            make_node<Const<T, replace_targ_t<T, typename N::allocator_type>>>(value), n2);
+        return subtract<T, Internal_allocator>(make_node<Const<T, Internal_allocator>>(value), n2);
     }
 
-    template <node_type N>
-    class Neg : public Node<decltype(-compute_of<N>()), replace_targ_t<decltype(-compute_of<N>()), typename N::allocator_type>> {
+    template <typename T, typename Internal_allocator = std::allocator<T>>
+    class Neg : public Node<T, Internal_allocator> {
     public:
-        using value_type = decltype(-compute_of<N>());
-        using allocator_type = replace_targ_t<value_type, typename N::allocator_type>;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Neg(const std::shared_ptr<N>& n)
+        Neg(const std::shared_ptr<Node<T, Internal_allocator>>& n)
             : Node<value_type, allocator_type>(NodeType::negate)
             , n_(n)
         { }
@@ -374,33 +344,33 @@ namespace details {
         }
 
     private:
-        std::shared_ptr<Node<typename N::value_type, typename N::allocator_type>> n_;
+        std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
-    template <node_type N>
-    [[nodiscard]] auto negate(const std::shared_ptr<N>& n)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto negate(const std::shared_ptr<Node<T, Internal_allocator>>& n)
     {
         if (n->type() == NodeType::constant) {
-            auto c = std::dynamic_pointer_cast<Const<typename N::value_type, typename N::allocator_type>>(n);
-            if (c && c->compute() == zero_value<typename N::value_type>()) {
+            auto c = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n);
+            if (c && c->compute() == zero_value<T>()) {
                 return n;
             }
         }
 
-        return make_node<Neg<N>>(n);
+        return make_node<Neg<T, Internal_allocator>>(n);
     }
-    template <node_type N>
-    [[nodiscard]] auto operator-(const std::shared_ptr<N>& n)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto operator-(const std::shared_ptr<Node<T, Internal_allocator>>& n)
     {
-        return negate<N>(n);
+        return negate<T, Internal_allocator>(n);
     }
 
-    template <node_type N1, node_type N2>
-    class Mul : public Node<decltype(compute_of<N1>() * compute_of<N2>()), replace_targ_t<decltype(compute_of<N1>() * compute_of<N2>()), typename N1::allocator_type>> {
+    template <typename T, typename Internal_allocator = std::allocator<T>>
+    class Mul : public Node<T, Internal_allocator> {
     public:
-        using value_type = decltype(compute_of<N1>() * compute_of<N2>());
-        using allocator_type = replace_targ_t<value_type, typename N1::allocator_type>;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Mul(const std::shared_ptr<N1>& n1, const std::shared_ptr<N2>& n2)
+        Mul(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
             : Node<value_type, allocator_type>(NodeType::multiply)
             , n1_(n1)
             , n2_(n2)
@@ -423,63 +393,60 @@ namespace details {
         }
 
     private:
-        std::shared_ptr<Node<typename N1::value_type, typename N1::allocator_type>> n1_;
-        std::shared_ptr<Node<typename N2::value_type, typename N2::allocator_type>> n2_;
+        std::shared_ptr<Node<T, Internal_allocator>> n1_;
+        std::shared_ptr<Node<T, Internal_allocator>> n2_;
     };
-    template <node_type N1, node_type N2>
-    [[nodiscard]] auto multiply(const std::shared_ptr<N1>& n1, const std::shared_ptr<N2>& n2)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto multiply(
+        const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
     {
-        if constexpr (std::is_same_v<typename N1::value_type, typename N2::value_type>) {
-            if (n1->type() == NodeType::constant) {
-                auto c = std::dynamic_pointer_cast<Const<typename N1::value_type, typename N1::allocator_type>>(n1);
-                if (c && c->compute() == zero_value<typename N1::value_type>()) {
-                    return constant<typename N2::value_type, typename N2::allocator_type>(
-                        zero_value<typename N2::value_type>());
-                }
-                if (c && c->compute() == unit_value<typename N1::value_type>()) {
-                    return n2;
-                }
+        if (n1->type() == NodeType::constant) {
+            auto c = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n1);
+            if (c && c->compute() == zero_value<T>()) {
+                return constant<T, Internal_allocator>(
+                    zero_value<T>());
             }
-
-            if (n2->type() == NodeType::constant) {
-                auto c = std::dynamic_pointer_cast<Const<typename N2::value_type, typename N2::allocator_type>>(n2);
-                if (c && c->compute() == zero_value<typename N2::value_type>()) {
-                    return constant<typename N1::value_type, typename N1::allocator_type>(
-                        zero_value<typename N1::value_type>());
-                }
-                if (c && c->compute() == unit_value<typename N2::value_type>()) {
-                    return n1;
-                }
+            if (c && c->compute() == unit_value<T>()) {
+                return n2;
             }
         }
 
-        return make_node<Mul<N1, N2>>(n1, n2);
+        if (n2->type() == NodeType::constant) {
+            auto c = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n2);
+            if (c && c->compute() == zero_value<T>()) {
+                return constant<T, Internal_allocator>(
+                    zero_value<T>());
+            }
+            if (c && c->compute() == unit_value<T>()) {
+                return n1;
+            }
+        }
+
+        return make_node<Mul<T, Internal_allocator>>(n1, n2);
     }
-    template <node_type N1, node_type N2>
-    [[nodiscard]] auto operator*(const std::shared_ptr<N1>& n1, const std::shared_ptr<N2>& n2)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto operator*(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
     {
-        return multiply<N1, N2>(n1, n2);
+        return multiply<T, Internal_allocator>(n1, n2);
     }
-    template <node_type N, typename T>
-    [[nodiscard]] auto operator*(const std::shared_ptr<N>& n1, const T& value)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto operator*(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const T& value)
     {
-        return multiply<N, Node<T, replace_targ_t<T, typename N::allocator_type>>>(
-            n1, make_node<Const<T, replace_targ_t<T, typename N::allocator_type>>>(value));
+        return multiply<T, Internal_allocator>(n1, make_node<Const<T, Internal_allocator>>(value));
     }
-    template <typename T, node_type N>
-    [[nodiscard]] auto operator*(const T& value, const std::shared_ptr<N>& n2)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto operator*(const T& value, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
     {
-        return multiply<Node<T, replace_targ_t<T, typename N::allocator_type>>, N>(
-            make_node<Const<T, replace_targ_t<T, typename N::allocator_type>>>(value), n2);
+        return multiply<T, Internal_allocator>(make_node<Const<T, Internal_allocator>>(value), n2);
     }
 
-    template <node_type N1, node_type N2>
-    class Div : public Node<decltype(compute_of<N1>() / compute_of<N2>()), replace_targ_t<decltype(compute_of<N1>() / compute_of<N2>()), typename N1::allocator_type>> {
+    template <typename T, typename Internal_allocator = std::allocator<T>>
+    class Div : public Node<T, Internal_allocator> {
     public:
-        using value_type = decltype(compute_of<N1>() / compute_of<N2>());
-        using allocator_type = replace_targ_t<value_type, typename N1::allocator_type>;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Div(const std::shared_ptr<N1>& n1, const std::shared_ptr<N2>& n2)
+        Div(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
             : Node<value_type, allocator_type>(NodeType::divide)
             , n1_(n1)
             , n2_(n2)
@@ -488,7 +455,7 @@ namespace details {
         [[nodiscard]] value_type compute() const override
         {
             auto n2_value = n2_->compute();
-            if (n2_value == zero_value<decltype(n2_value)>()) {
+            if (n2_value == zero_value<value_type>()) {
                 throw std::overflow_error{"division by zero"};
             }
 
@@ -507,53 +474,48 @@ namespace details {
         }
 
     private:
-        std::shared_ptr<Node<typename N1::value_type, typename N1::allocator_type>> n1_;
-        std::shared_ptr<Node<typename N2::value_type, typename N2::allocator_type>> n2_;
+        std::shared_ptr<Node<T, Internal_allocator>> n1_;
+        std::shared_ptr<Node<T, Internal_allocator>> n2_;
     };
-    template <node_type N1, node_type N2>
-    [[nodiscard]] auto divide(const std::shared_ptr<N1>& n1, const std::shared_ptr<N2>& n2)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto divide(
+        const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
     {
-        if constexpr (std::is_same_v<typename N1::value_type, typename N2::value_type>) {
-            if (n1->type() == NodeType::constant) {
-                auto c = std::dynamic_pointer_cast<Const<typename N1::value_type, typename N1::allocator_type>>(n1);
-                if (c && c->compute() == zero_value<typename N1::value_type>() && n2->compute() != zero_value<typename N2::value_type>()) {
-                    return constant<typename N1::value_type, typename N1::allocator_type>(
-                        zero_value<typename N1::value_type>());
-                }
+        if (n1->type() == NodeType::constant) {
+            auto c = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n1);
+            if (c && c->compute() == zero_value<T>() && n2->compute() != zero_value<T>()) {
+                return constant<T, Internal_allocator>(zero_value<T>());
             }
         }
 
-        return make_node<Div<N1, N2>>(n1, n2);
+        return make_node<Div<T, Internal_allocator>>(n1, n2);
     }
-    template <node_type N1, node_type N2>
-    [[nodiscard]] auto operator/(const std::shared_ptr<N1>& n1, const std::shared_ptr<N2>& n2)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto operator/(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
     {
-        return divide<N1, N2>(n1, n2);
+        return divide<T, Internal_allocator>(n1, n2);
     }
-    template <node_type N, typename T>
-    [[nodiscard]] auto operator/(const std::shared_ptr<N>& n1, const T& value)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto operator/(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const T& value)
     {
-        return divide<N, Node<T, replace_targ_t<T, typename N::allocator_type>>>(
-            n1, make_node<Const<T, replace_targ_t<T, typename N::allocator_type>>>(value));
+        return divide<T, Internal_allocator>(n1, make_node<Const<T, Internal_allocator>>(value));
     }
-    template <typename T, node_type N>
-    [[nodiscard]] auto operator/(const T& value, const std::shared_ptr<N>& n2)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto operator/(const T& value, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
     {
-        return divide<Node<T, replace_targ_t<T, typename N::allocator_type>>, N>(
-            make_node<Const<T, replace_targ_t<T, typename N::allocator_type>>>(value), n2);
+        return divide<T, Internal_allocator>(make_node<Const<T, Internal_allocator>>(value), n2);
     }
 
-    template <node_type N>
+    template <typename T, typename Internal_allocator>
     class Cos;
 
-    using std::sin;
-    template <node_type N>
-    class Sin : public Node<decltype(sin(compute_of<N>())), replace_targ_t<decltype(sin(compute_of<N>())), typename N::allocator_type>> {
+    template <typename T, typename Internal_allocator = std::allocator<T>>
+    class Sin : public Node<T, Internal_allocator> {
     public:
-        using value_type = decltype(sin(compute_of<N>()));
-        using allocator_type = replace_targ_t<value_type, typename N::allocator_type>;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Sin(const std::shared_ptr<N>& n)
+        Sin(const std::shared_ptr<Node<T, Internal_allocator>>& n)
             : Node<value_type, allocator_type>(NodeType::sin)
             , n_(n)
         { }
@@ -576,22 +538,21 @@ namespace details {
         }
 
     private:
-        std::shared_ptr<Node<typename N::value_type, typename N::allocator_type>> n_;
+        std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
-    template <node_type N>
-    [[nodiscard]] auto sin(const std::shared_ptr<N>& n)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto sin(const std::shared_ptr<Node<T, Internal_allocator>>& n)
     {
-        return make_node<Sin<N>>(n);
+        return make_node<Sin<T, Internal_allocator>>(n);
     }
 
-    using std::cos;
-    template <node_type N>
-    class Cos : public Node<decltype(cos(compute_of<N>())), replace_targ_t<decltype(cos(compute_of<N>())), typename N::allocator_type>> {
+    template <typename T, typename Internal_allocator = std::allocator<T>>
+    class Cos : public Node<T, Internal_allocator> {
     public:
-        using value_type = decltype(cos(compute_of<N>()));
-        using allocator_type = replace_targ_t<value_type, typename N::allocator_type>;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Cos(const std::shared_ptr<N>& v)
+        Cos(const std::shared_ptr<Node<T, Internal_allocator>>& v)
             : Node<value_type, allocator_type>(NodeType::cos)
             , n_(v)
         { }
@@ -614,25 +575,24 @@ namespace details {
         }
 
     private:
-        std::shared_ptr<Node<typename N::value_type, typename N::allocator_type>> n_;
+        std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
-    template <node_type N>
-    [[nodiscard]] auto cos(const std::shared_ptr<N>& n)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto cos(const std::shared_ptr<Node<T, Internal_allocator>>& n)
     {
-        return make_node<Cos<N>>(n);
+        return make_node<Cos<T, Internal_allocator>>(n);
     }
 
-    template <node_type N>
+    template <typename T, typename Internal_allocator>
     class Sec;
 
-    using std::tan;
-    template <node_type N>
-    class Tan : public Node<decltype(tan(compute_of<N>())), replace_targ_t<decltype(tan(compute_of<N>())), typename N::allocator_type>> {
+    template <typename T, typename Internal_allocator = std::allocator<T>>
+    class Tan : public Node<T, Internal_allocator> {
     public:
-        using value_type = decltype(tan(compute_of<N>()));
-        using allocator_type = replace_targ_t<value_type, typename N::allocator_type>;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Tan(const std::shared_ptr<N>& v)
+        Tan(const std::shared_ptr<Node<T, Internal_allocator>>& v)
             : Node<value_type, allocator_type>(NodeType::tan)
             , n_(v)
         { }
@@ -655,22 +615,21 @@ namespace details {
         }
 
     private:
-        std::shared_ptr<Node<typename N::value_type, typename N::allocator_type>> n_;
+        std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
-    template <node_type N>
-    [[nodiscard]] auto tan(const std::shared_ptr<N>& n)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto tan(const std::shared_ptr<Node<T, Internal_allocator>>& n)
     {
-        return make_node<Tan<N>>(n);
+        return make_node<Tan<T, Internal_allocator>>(n);
     }
 
-    using std::cos;
-    template <node_type N>
-    class Sec : public Node<decltype(cos(compute_of<N>())), replace_targ_t<decltype(cos(compute_of<N>())), typename N::allocator_type>> {
+    template <typename T, typename Internal_allocator = std::allocator<T>>
+    class Sec : public Node<T, Internal_allocator> {
     public:
-        using value_type = decltype(cos(compute_of<N>()));
-        using allocator_type = replace_targ_t<value_type, typename N::allocator_type>;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Sec(const std::shared_ptr<N>& v)
+        Sec(const std::shared_ptr<Node<T, Internal_allocator>>& v)
             : Node<value_type, allocator_type>(NodeType::sec)
             , n_(v)
         { }
@@ -678,12 +637,12 @@ namespace details {
         [[nodiscard]] value_type compute() const override
         {
             using std::cos;
-            auto d = full_value<decltype(cos(n_->compute()))>(cos(n_->compute()));
-            if (d == zero_value<decltype(d)>()) {
+            auto d = full_value<value_type>(cos(n_->compute()));
+            if (d == zero_value<value_type>()) {
                 throw std::overflow_error{"division by zero"};
             }
 
-            return unit_value<decltype(d)>() / d;
+            return unit_value<value_type>() / d;
         }
 
         [[nodiscard]] std::shared_ptr<Node<value_type, allocator_type>> backward(std::int64_t id) const override
@@ -698,25 +657,24 @@ namespace details {
         }
 
     private:
-        std::shared_ptr<Node<typename N::value_type, typename N::allocator_type>> n_;
+        std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
-    template <node_type N>
-    [[nodiscard]] auto sec(const std::shared_ptr<N>& n)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto sec(const std::shared_ptr<Node<T, Internal_allocator>>& n)
     {
-        return make_node<Sec<N>>(n);
+        return make_node<Sec<T, Internal_allocator>>(n);
     }
 
-    template <node_type N>
+    template <typename T, typename Internal_allocator>
     class Csc;
 
-    using std::tan;
-    template <node_type N>
-    class Cot : public Node<decltype(tan(compute_of<N>())), replace_targ_t<decltype(tan(compute_of<N>())), typename N::allocator_type>> {
+    template <typename T, typename Internal_allocator = std::allocator<T>>
+    class Cot : public Node<T, Internal_allocator> {
     public:
-        using value_type = decltype(tan(compute_of<N>()));
-        using allocator_type = replace_targ_t<value_type, typename N::allocator_type>;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Cot(const std::shared_ptr<N>& v)
+        Cot(const std::shared_ptr<Node<T, Internal_allocator>>& v)
             : Node<value_type, allocator_type>(NodeType::cot)
             , n_(v)
         { }
@@ -724,12 +682,12 @@ namespace details {
         [[nodiscard]] value_type compute() const override
         {
             using std::tan;
-            auto d = full_value<decltype(tan(n_->compute()))>(tan(n_->compute()));
-            if (d == zero_value<decltype(d)>()) {
+            auto d = full_value<value_type>(tan(n_->compute()));
+            if (d == zero_value<value_type>()) {
                 throw std::overflow_error{"division by zero"};
             }
 
-            return unit_value<decltype(d)>() / d;
+            return unit_value<value_type>() / d;
         }
 
         [[nodiscard]] std::shared_ptr<Node<value_type, allocator_type>> backward(std::int64_t id) const override
@@ -744,22 +702,21 @@ namespace details {
         }
 
     private:
-        std::shared_ptr<Node<typename N::value_type, typename N::allocator_type>> n_;
+        std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
-    template <node_type N>
-    [[nodiscard]] auto cot(const std::shared_ptr<N>& n)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto cot(const std::shared_ptr<Node<T, Internal_allocator>>& n)
     {
-        return make_node<Cot<N>>(n);
+        return make_node<Cot<T, Internal_allocator>>(n);
     }
 
-    using std::sin;
-    template <node_type N>
-    class Csc : public Node<decltype(sin(compute_of<N>())), replace_targ_t<decltype(sin(compute_of<N>())), typename N::allocator_type>> {
+    template <typename T, typename Internal_allocator = std::allocator<T>>
+    class Csc : public Node<T, Internal_allocator> {
     public:
-        using value_type = decltype(sin(compute_of<N>()));
-        using allocator_type = replace_targ_t<value_type, typename N::allocator_type>;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Csc(const std::shared_ptr<N>& v)
+        Csc(const std::shared_ptr<Node<T, Internal_allocator>>& v)
             : Node<value_type, allocator_type>(NodeType::csc)
             , n_(v)
         { }
@@ -767,12 +724,12 @@ namespace details {
         [[nodiscard]] value_type compute() const override
         {
             using std::sin;
-            auto d = full_value<decltype(sin(n_->compute()))>(sin(n_->compute()));
-            if (d == zero_value<decltype(d)>()) {
+            auto d = full_value<value_type>(sin(n_->compute()));
+            if (d == zero_value<value_type>()) {
                 throw std::overflow_error{"division by zero"};
             }
 
-            return unit_value<decltype(d)>() / d;
+            return unit_value<value_type>() / d;
         }
 
         [[nodiscard]] std::shared_ptr<Node<value_type, allocator_type>> backward(std::int64_t id) const override
@@ -787,22 +744,21 @@ namespace details {
         }
 
     private:
-        std::shared_ptr<Node<typename N::value_type, typename N::allocator_type>> n_;
+        std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
-    template <node_type N>
-    auto csc(const std::shared_ptr<N>& n)
+    template <typename T, typename Internal_allocator>
+    auto csc(const std::shared_ptr<Node<T, Internal_allocator>>& n)
     {
-        return make_node<Csc<N>>(n);
+        return make_node<Csc<T, Internal_allocator>>(n);
     }
 
-    using std::exp;
-    template <node_type N>
-    class Exp : public Node<decltype(exp(compute_of<N>())), replace_targ_t<decltype(exp(compute_of<N>())), typename N::allocator_type>> {
+    template <typename T, typename Internal_allocator = std::allocator<T>>
+    class Exp : public Node<T, Internal_allocator> {
     public:
-        using value_type = decltype(exp(compute_of<N>()));
-        using allocator_type = replace_targ_t<value_type, typename N::allocator_type>;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Exp(const std::shared_ptr<N>& v)
+        Exp(const std::shared_ptr<Node<T, Internal_allocator>>& v)
             : Node<value_type, allocator_type>(NodeType::exp)
             , n_(v)
         { }
@@ -825,22 +781,21 @@ namespace details {
         }
 
     private:
-        std::shared_ptr<Node<typename N::value_type, typename N::allocator_type>> n_;
+        std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
-    template <node_type N>
-    [[nodiscard]] auto exp(const std::shared_ptr<N>& n)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto exp(const std::shared_ptr<Node<T, Internal_allocator>>& n)
     {
-        return make_node<Exp<N>>(n);
+        return make_node<Exp<T, Internal_allocator>>(n);
     }
 
-    using std::log;
-    template <node_type N>
-    class Ln : public Node<decltype(log(compute_of<N>())), replace_targ_t<decltype(log(compute_of<N>())), typename N::allocator_type>> {
+    template <typename T, typename Internal_allocator = std::allocator<T>>
+    class Ln : public Node<T, Internal_allocator> {
     public:
-        using value_type = decltype(log(compute_of<N>()));
-        using allocator_type = replace_targ_t<value_type, typename N::allocator_type>;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Ln(const std::shared_ptr<N>& v)
+        Ln(const std::shared_ptr<Node<T, Internal_allocator>>& v)
             : Node<value_type, allocator_type>(NodeType::ln)
             , n_(v)
         { }
@@ -848,8 +803,8 @@ namespace details {
         [[nodiscard]] value_type compute() const override
         {
             using std::log;
-            auto d = full_value<decltype(n_->compute())>(n_->compute());
-            if (d <= zero_value<decltype(d)>()) {
+            auto d = full_value<value_type>(n_->compute());
+            if (d <= zero_value<value_type>()) {
                 throw std::overflow_error{"log of non-positive number"};
             }
 
@@ -868,22 +823,21 @@ namespace details {
         }
 
     private:
-        std::shared_ptr<Node<typename N::value_type, typename N::allocator_type>> n_;
+        std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
-    template <node_type N>
-    [[nodiscard]] auto ln(const std::shared_ptr<N>& n)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto ln(const std::shared_ptr<Node<T, Internal_allocator>>& n)
     {
-        return make_node<Ln<N>>(n);
+        return make_node<Ln<T, Internal_allocator>>(n);
     }
 
-    using std::pow;
-    template <node_type N, typename T>
-    class Pow_fn : public Node<decltype(pow(compute_of<N>(), unit_value<T>())), replace_targ_t<decltype(pow(compute_of<N>(), unit_value<T>())), typename N::allocator_type>> {
+    template <typename T, typename Internal_allocator = std::allocator<T>>
+    class Pow_fn : public Node<T, Internal_allocator> {
     public:
-        using value_type = decltype(pow(compute_of<N>(), unit_value<T>()));
-        using allocator_type = replace_targ_t<value_type, typename N::allocator_type>;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Pow_fn(const std::shared_ptr<N>& f, const T& n)
+        Pow_fn(const std::shared_ptr<Node<T, Internal_allocator>>& f, const T& n)
             : Node<value_type, allocator_type>(NodeType::pow_fn)
             , f_(f)
             , n_(n)
@@ -907,39 +861,35 @@ namespace details {
         }
 
     private:
-        std::shared_ptr<Node<typename N::value_type, typename N::allocator_type>> f_;
+        std::shared_ptr<Node<T, Internal_allocator>> f_;
         T n_;
     };
-    template <node_type N, typename T>
-    [[nodiscard]] auto pow(const std::shared_ptr<N>& f, const T& n)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto pow(const std::shared_ptr<Node<T, Internal_allocator>>& f, const T& n)
     {
-        if constexpr (std::is_same_v<typename N::value_type, T>) {
-            if (n == unit_value<T>()) {
-                return f;
-            }
-
-            if (n == zero_value<T>()) {
-                return constant<typename N::value_type, typename N::allocator_type>(
-                    unit_value<typename N::value_type>());
-            }
+        if (n == unit_value<T>()) {
+            return f;
         }
 
-        return make_node<Pow_fn<N, T>>(f, n);
+        if (n == zero_value<T>()) {
+            return constant<T, Internal_allocator>(unit_value<T>());
+        }
+
+        return make_node<Pow_fn<T, Internal_allocator>>(f, n);
     }
-    template <node_type N, typename T>
-    [[nodiscard]] auto operator^(const std::shared_ptr<N>& f, const T& n)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto operator^(const std::shared_ptr<Node<T, Internal_allocator>>& f, const T& n)
     {
-        return pow<N, T>(f, n);
+        return pow<T, Internal_allocator>(f, n);
     }
 
-    using std::pow;
-    template <typename T, node_type N>
-    class Pow_af : public Node<decltype(pow(unit_value<T>(), compute_of<N>())), replace_targ_t<decltype(pow(unit_value<T>(), compute_of<N>())), typename N::allocator_type>> {
+    template <typename T, typename Internal_allocator = std::allocator<T>>
+    class Pow_af : public Node<T, Internal_allocator> {
     public:
-        using value_type = decltype(pow(unit_value<T>(), compute_of<N>()));
-        using allocator_type = replace_targ_t<value_type, typename N::allocator_type>;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Pow_af(const T& a, const std::shared_ptr<N>& f)
+        Pow_af(const T& a, const std::shared_ptr<Node<T, Internal_allocator>>& f)
             : Node<value_type, allocator_type>(NodeType::pow_af)
             , a_(a)
             , f_(f)
@@ -965,39 +915,34 @@ namespace details {
 
     private:
         T a_;
-        std::shared_ptr<Node<typename N::value_type, typename N::allocator_type>> f_;
+        std::shared_ptr<Node<T, Internal_allocator>> f_;
     };
-    template <typename T, node_type N>
-    [[nodiscard]] auto pow(const T& a, const std::shared_ptr<N>& f)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto pow(const T& a, const std::shared_ptr<Node<T, Internal_allocator>>& f)
     {
-        if constexpr (std::is_same_v<typename N::value_type, T>) {
-            if (a == unit_value<T>()) {
-                return constant<typename N::value_type, typename N::allocator_type>(
-                    unit_value<typename N::value_type>());
-            }
-
-            if (a == zero_value<T>()) {
-                return constant<typename N::value_type, typename N::allocator_type>(
-                    zero_value<typename N::value_type>());
-            }
+        if (a == unit_value<T>()) {
+            return constant<T, Internal_allocator>(unit_value<T>());
         }
 
-        return make_node<Pow_af<T, N>>(a, f);
+        if (a == zero_value<T>()) {
+            return constant<T, Internal_allocator>(zero_value<T>());
+        }
+
+        return make_node<Pow_af<T, Internal_allocator>>(a, f);
     }
-    template <typename T, node_type N>
-    [[nodiscard]] auto operator^(const T& a, const std::shared_ptr<N>& f)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto operator^(const T& a, const std::shared_ptr<Node<T, Internal_allocator>>& f)
     {
-        return pow<T, N>(a, f);
+        return pow<T, Internal_allocator>(a, f);
     }
 
-    using std::pow;
-    template <node_type N1, node_type N2>
-    class Pow_fg : public Node<decltype(pow(compute_of<N1>(), compute_of<N2>())), replace_targ_t<decltype(pow(compute_of<N1>(), compute_of<N2>())), typename N1::allocator_type>> {
+    template <typename T, typename Internal_allocator = std::allocator<T>>
+    class Pow_fg : public Node<T, Internal_allocator> {
     public:
-        using value_type = decltype(pow(compute_of<N1>(), compute_of<N2>()));
-        using allocator_type = replace_targ_t<value_type, typename N1::allocator_type>;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Pow_fg(const std::shared_ptr<N1>& n1, const std::shared_ptr<N2>& n2)
+        Pow_fg(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
             : Node<value_type, allocator_type>(NodeType::pow_fg)
             , n1_(n1)
             , n2_(n2)
@@ -1021,53 +966,51 @@ namespace details {
         }
 
     private:
-        std::shared_ptr<Node<typename N1::value_type, typename N1::allocator_type>> n1_;
-        std::shared_ptr<Node<typename N2::value_type, typename N2::allocator_type>> n2_;
+        std::shared_ptr<Node<T, Internal_allocator>> n1_;
+        std::shared_ptr<Node<T, Internal_allocator>> n2_;
     };
-    template <node_type N1, node_type N2>
-    [[nodiscard]] auto pow(const std::shared_ptr<N1>& n1, const std::shared_ptr<N2>& n2)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto pow(
+        const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
     {
-        if constexpr (std::is_same_v<typename N1::value_type, typename N2::value_type>) {
-            if (n1->type() == NodeType::constant) {
-                auto c = std::dynamic_pointer_cast<Const<typename N1::value_type, typename N1::allocator_type>>(n1);
-                if (c && c->compute() == zero_value<typename N1::value_type>()) {
-                    return constant<typename N1::value_type, typename N1::allocator_type>(
-                        zero_value<typename N1::value_type>());
-                }
-                if (c && c->compute() == unit_value<typename N1::value_type>()) {
-                    return constant<typename N1::value_type, typename N1::allocator_type>(
-                        unit_value<typename N1::value_type>());
-                }
+        if (n1->type() == NodeType::constant) {
+            auto c = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n1);
+            if (c && c->compute() == zero_value<T>()) {
+                return constant<T, Internal_allocator>(
+                    zero_value<T>());
             }
-
-            if (n2->type() == NodeType::constant) {
-                auto c = std::dynamic_pointer_cast<Const<typename N2::value_type, typename N2::allocator_type>>(n2);
-                if (c && c->compute() == zero_value<typename N2::value_type>()) {
-                    return constant<typename N1::value_type, typename N1::allocator_type>(
-                        unit_value<typename N1::value_type>());
-                }
-                if (c && c->compute() == unit_value<typename N2::value_type>()) {
-                    return n1;
-                }
+            if (c && c->compute() == unit_value<T>()) {
+                return constant<T, Internal_allocator>(
+                    unit_value<T>());
             }
         }
 
-        return make_node<Pow_fg<N1, N2>>(n1, n2);
+        if (n2->type() == NodeType::constant) {
+            auto c = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n2);
+            if (c && c->compute() == zero_value<T>()) {
+                return constant<T, Internal_allocator>(
+                    unit_value<T>());
+            }
+            if (c && c->compute() == unit_value<T>()) {
+                return n1;
+            }
+        }
+
+        return make_node<Pow_fg<T, Internal_allocator>>(n1, n2);
     }
-    template <node_type N1, node_type N2>
-    [[nodiscard]] auto operator^(const std::shared_ptr<N1>& n1, const std::shared_ptr<N2>& n2)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto operator^(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
     {
-        return pow<N1, N2>(n1, n2);
+        return pow<T, Internal_allocator>(n1, n2);
     }
 
-    using std::asin;
-    template <node_type N>
-    class Asin : public Node<decltype(asin(compute_of<N>())), replace_targ_t<decltype(asin(compute_of<N>())), typename N::allocator_type>> {
+    template <typename T, typename Internal_allocator = std::allocator<T>>
+    class Asin : public Node<T, Internal_allocator> {
     public:
-        using value_type = decltype(asin(compute_of<N>()));
-        using allocator_type = replace_targ_t<value_type, typename N::allocator_type>;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Asin(const std::shared_ptr<N>& n)
+        Asin(const std::shared_ptr<Node<T, Internal_allocator>>& n)
             : Node<value_type, allocator_type>(NodeType::asin)
             , n_(n)
         { }
@@ -1080,13 +1023,11 @@ namespace details {
 
         [[nodiscard]] std::shared_ptr<Node<value_type, allocator_type>> backward(std::int64_t id) const override
         {
-            auto constant_value = unit_value<decltype(n_->compute())>();
+            auto constant_value = unit_value<value_type>();
 
             return n_->backward(id)
-                * ((constant<decltype(constant_value),
-                        replace_targ_t<decltype(constant_value), typename N::allocator_type>>(constant_value)
-                       - (n_ ^ full_value<decltype(n_->compute())>(2)))
-                    ^ full_value<decltype(n_->compute())>(-0.5));
+                * ((constant<value_type, allocator_type>(constant_value) - (n_ ^ full_value<value_type>(2)))
+                    ^ full_value<value_type>(-0.5));
         }
 
         std::ostream& print(std::ostream& os) const override
@@ -1096,22 +1037,21 @@ namespace details {
         }
 
     private:
-        std::shared_ptr<Node<typename N::value_type, typename N::allocator_type>> n_;
+        std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
-    template <node_type N>
-    [[nodiscard]] auto asin(const std::shared_ptr<N>& n)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto asin(const std::shared_ptr<Node<T, Internal_allocator>>& n)
     {
-        return make_node<Asin<N>>(n);
+        return make_node<Asin<T, Internal_allocator>>(n);
     }
 
-    using std::acos;
-    template <node_type N>
-    class Acos : public Node<decltype(acos(compute_of<N>())), replace_targ_t<decltype(acos(compute_of<N>())), typename N::allocator_type>> {
+    template <typename T, typename Internal_allocator = std::allocator<T>>
+    class Acos : public Node<T, Internal_allocator> {
     public:
-        using value_type = decltype(acos(compute_of<N>()));
-        using allocator_type = replace_targ_t<value_type, typename N::allocator_type>;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Acos(const std::shared_ptr<N>& n)
+        Acos(const std::shared_ptr<Node<T, Internal_allocator>>& n)
             : Node<value_type, allocator_type>(NodeType::acos)
             , n_(n)
         { }
@@ -1124,13 +1064,11 @@ namespace details {
 
         [[nodiscard]] std::shared_ptr<Node<value_type, allocator_type>> backward(std::int64_t id) const override
         {
-            auto constant_value = unit_value<decltype(n_->compute())>();
+            auto constant_value = unit_value<value_type>();
 
             return n_->backward(id)
-                * (-(((constant<decltype(constant_value),
-                           replace_targ_t<decltype(constant_value), typename N::allocator_type>>(constant_value)
-                          - (n_ ^ full_value<decltype(n_->compute())>(2)))
-                    ^ full_value<decltype(n_->compute())>(-0.5))));
+                * (-(((constant<value_type, allocator_type>(constant_value) - (n_ ^ full_value<value_type>(2)))
+                    ^ full_value<value_type>(-0.5))));
         }
 
         std::ostream& print(std::ostream& os) const override
@@ -1140,22 +1078,21 @@ namespace details {
         }
 
     private:
-        std::shared_ptr<Node<typename N::value_type, typename N::allocator_type>> n_;
+        std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
-    template <node_type N>
-    [[nodiscard]] auto acos(const std::shared_ptr<N>& n)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto acos(const std::shared_ptr<Node<T, Internal_allocator>>& n)
     {
-        return make_node<Acos<N>>(n);
+        return make_node<Acos<T, Internal_allocator>>(n);
     }
 
-    using std::atan;
-    template <node_type N>
-    class Atan : public Node<decltype(atan(compute_of<N>())), replace_targ_t<decltype(atan(compute_of<N>())), typename N::allocator_type>> {
+    template <typename T, typename Internal_allocator = std::allocator<T>>
+    class Atan : public Node<T, Internal_allocator> {
     public:
-        using value_type = decltype(atan(compute_of<N>()));
-        using allocator_type = replace_targ_t<value_type, typename N::allocator_type>;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Atan(const std::shared_ptr<N>& n)
+        Atan(const std::shared_ptr<Node<T, Internal_allocator>>& n)
             : Node<value_type, allocator_type>(NodeType::atan)
             , n_(n)
         { }
@@ -1168,13 +1105,11 @@ namespace details {
 
         [[nodiscard]] std::shared_ptr<Node<value_type, allocator_type>> backward(std::int64_t id) const override
         {
-            auto constant_value = unit_value<decltype(n_->compute())>();
+            auto constant_value = unit_value<value_type>();
 
             return n_->backward(id)
-                * ((constant<decltype(constant_value),
-                        replace_targ_t<decltype(constant_value), typename N::allocator_type>>(constant_value)
-                       + (n_ ^ full_value<decltype(n_->compute())>(2)))
-                    ^ full_value<decltype(n_->compute())>(-1));
+                * ((constant<value_type, allocator_type>(constant_value) + (n_ ^ full_value<value_type>(2)))
+                    ^ full_value<value_type>(-1));
         }
 
         std::ostream& print(std::ostream& os) const override
@@ -1184,22 +1119,21 @@ namespace details {
         }
 
     private:
-        std::shared_ptr<Node<typename N::value_type, typename N::allocator_type>> n_;
+        std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
-    template <node_type N>
-    [[nodiscard]] auto atan(const std::shared_ptr<N>& n)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto atan(const std::shared_ptr<Node<T, Internal_allocator>>& n)
     {
-        return make_node<Atan<N>>(n);
+        return make_node<Atan<T, Internal_allocator>>(n);
     }
 
-    using std::atan;
-    template <node_type N>
-    class Acot : public Node<decltype(atan(compute_of<N>())), replace_targ_t<decltype(atan(compute_of<N>())), typename N::allocator_type>> {
+    template <typename T, typename Internal_allocator = std::allocator<T>>
+    class Acot : public Node<T, Internal_allocator> {
     public:
-        using value_type = decltype(atan(compute_of<N>()));
-        using allocator_type = replace_targ_t<value_type, typename N::allocator_type>;
+        using value_type = Node<T, Internal_allocator>::value_type;
+        using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Acot(const std::shared_ptr<N>& n)
+        Acot(const std::shared_ptr<Node<T, Internal_allocator>>& n)
             : Node<value_type, allocator_type>(NodeType::acot)
             , n_(n)
         { }
@@ -1207,8 +1141,8 @@ namespace details {
         [[nodiscard]] value_type compute() const override
         {
             using std::atan;
-            auto d = full_value<decltype(n_->compute())>(n_->compute());
-            if (d == zero_value<decltype(d)>()) {
+            auto d = full_value<value_type>(n_->compute());
+            if (d == zero_value<value_type>()) {
                 throw std::overflow_error{"division by zero"};
             }
 
@@ -1217,13 +1151,11 @@ namespace details {
 
         [[nodiscard]] std::shared_ptr<Node<value_type, allocator_type>> backward(std::int64_t id) const override
         {
-            auto constant_value = unit_value<decltype(n_->compute())>();
+            auto constant_value = unit_value<value_type>();
 
             return n_->backward(id)
-                * (-(((constant<decltype(constant_value),
-                           replace_targ_t<decltype(constant_value), typename N::allocator_type>>(constant_value)
-                          + (n_ ^ full_value<decltype(n_->compute())>(-1)))
-                    ^ full_value<decltype(n_->compute())>(-1))));
+                * (-(((constant<value_type, allocator_type>(constant_value) + (n_ ^ full_value<value_type>(-1)))
+                    ^ full_value<value_type>(-1))));
         }
 
         std::ostream& print(std::ostream& os) const override
@@ -1233,12 +1165,12 @@ namespace details {
         }
 
     private:
-        std::shared_ptr<Node<typename N::value_type, typename N::allocator_type>> n_;
+        std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
-    template <node_type N>
-    [[nodiscard]] auto acot(const std::shared_ptr<N>& n)
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto acot(const std::shared_ptr<Node<T, Internal_allocator>>& n)
     {
-        return make_node<Acot<N>>(n);
+        return make_node<Acot<T, Internal_allocator>>(n);
     }
 }
 
