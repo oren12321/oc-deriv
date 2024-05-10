@@ -78,7 +78,7 @@ namespace details {
             : type_(type)
         { }
 
-        virtual void set(std::int64_t, const T&) { }
+        virtual void set(std::int64_t, const T&) = 0;
         virtual value_type compute() const = 0;
         virtual std::shared_ptr<Node<T, Internal_allocator>> backward(std::int64_t id) const = 0;
         virtual std::ostream& print(std::ostream& os) const = 0;
@@ -108,6 +108,8 @@ namespace details {
             : Node<value_type, allocator_type>(NodeType::constant)
             , value_(value)
         { }
+
+        void set(std::int64_t id, const value_type& value) override { }
 
         value_type compute() const override
         {
@@ -192,6 +194,12 @@ namespace details {
             , n2_(n2)
         { }
 
+        void set(std::int64_t id, const value_type& value) override
+        {
+            n1_->set(id, value);
+            n2_->set(id, value);
+        }
+
         [[nodiscard]] value_type compute() const override
         {
             return n1_->compute() + n2_->compute();
@@ -260,6 +268,12 @@ namespace details {
             , n2_(n2)
         { }
 
+        void set(std::int64_t id, const value_type& value) override
+        {
+            n1_->set(id, value);
+            n2_->set(id, value);
+        }
+
         [[nodiscard]] value_type compute() const override
         {
             return n1_->compute() - n2_->compute();
@@ -327,6 +341,11 @@ namespace details {
             , n_(n)
         { }
 
+        void set(std::int64_t id, const value_type& value) override
+        {
+            n_->set(id, value);
+        }
+
         [[nodiscard]] value_type compute() const override
         {
             return -n_->compute();
@@ -375,6 +394,12 @@ namespace details {
             , n1_(n1)
             , n2_(n2)
         { }
+
+        void set(std::int64_t id, const value_type& value) override
+        {
+            n1_->set(id, value);
+            n2_->set(id, value);
+        }
 
         [[nodiscard]] value_type compute() const override
         {
@@ -452,6 +477,12 @@ namespace details {
             , n2_(n2)
         { }
 
+        void set(std::int64_t id, const value_type& value) override
+        {
+            n1_->set(id, value);
+            n2_->set(id, value);
+        }
+
         [[nodiscard]] value_type compute() const override
         {
             auto n2_value = n2_->compute();
@@ -520,6 +551,11 @@ namespace details {
             , n_(n)
         { }
 
+        void set(std::int64_t id, const value_type& value) override
+        {
+            n_->set(id, value);
+        }
+
         [[nodiscard]] value_type compute() const override
         {
             using std::sin;
@@ -556,6 +592,11 @@ namespace details {
             : Node<value_type, allocator_type>(NodeType::cos)
             , n_(v)
         { }
+
+        void set(std::int64_t id, const value_type& value) override
+        {
+            n_->set(id, value);
+        }
 
         [[nodiscard]] value_type compute() const override
         {
@@ -597,6 +638,11 @@ namespace details {
             , n_(v)
         { }
 
+        void set(std::int64_t id, const value_type& value) override
+        {
+            n_->set(id, value);
+        }
+
         [[nodiscard]] value_type compute() const override
         {
             using std::tan;
@@ -633,6 +679,11 @@ namespace details {
             : Node<value_type, allocator_type>(NodeType::sec)
             , n_(v)
         { }
+
+        void set(std::int64_t id, const value_type& value) override
+        {
+            n_->set(id, value);
+        }
 
         [[nodiscard]] value_type compute() const override
         {
@@ -679,6 +730,11 @@ namespace details {
             , n_(v)
         { }
 
+        void set(std::int64_t id, const value_type& value) override
+        {
+            n_->set(id, value);
+        }
+
         [[nodiscard]] value_type compute() const override
         {
             using std::tan;
@@ -720,6 +776,11 @@ namespace details {
             : Node<value_type, allocator_type>(NodeType::csc)
             , n_(v)
         { }
+
+        void set(std::int64_t id, const value_type& value) override
+        {
+            n_->set(id, value);
+        }
 
         [[nodiscard]] value_type compute() const override
         {
@@ -763,6 +824,11 @@ namespace details {
             , n_(v)
         { }
 
+        void set(std::int64_t id, const value_type& value) override
+        {
+            n_->set(id, value);
+        }
+
         [[nodiscard]] value_type compute() const override
         {
             using std::exp;
@@ -799,6 +865,11 @@ namespace details {
             : Node<value_type, allocator_type>(NodeType::ln)
             , n_(v)
         { }
+
+        void set(std::int64_t id, const value_type& value) override
+        {
+            n_->set(id, value);
+        }
 
         [[nodiscard]] value_type compute() const override
         {
@@ -842,6 +913,11 @@ namespace details {
             , f_(f)
             , n_(n)
         { }
+
+        void set(std::int64_t id, const value_type& value) override
+        {
+            f_->set(id, value);
+        }
 
         [[nodiscard]] value_type compute() const override
         {
@@ -895,6 +971,11 @@ namespace details {
             , f_(f)
         { }
 
+        void set(std::int64_t id, const value_type& value) override
+        {
+            f_->set(id, value);
+        }
+
         [[nodiscard]] value_type compute() const override
         {
             using std::pow;
@@ -947,6 +1028,12 @@ namespace details {
             , n1_(n1)
             , n2_(n2)
         { }
+
+        void set(std::int64_t id, const value_type& value) override
+        {
+            n1_->set(id, value);
+            n2_->set(id, value);
+        }
 
         [[nodiscard]] value_type compute() const override
         {
@@ -1015,6 +1102,11 @@ namespace details {
             , n_(n)
         { }
 
+        void set(std::int64_t id, const value_type& value) override
+        {
+            n_->set(id, value);
+        }
+
         [[nodiscard]] value_type compute() const override
         {
             using std::asin;
@@ -1055,6 +1147,11 @@ namespace details {
             : Node<value_type, allocator_type>(NodeType::acos)
             , n_(n)
         { }
+
+        void set(std::int64_t id, const value_type& value) override
+        {
+            n_->set(id, value);
+        }
 
         [[nodiscard]] value_type compute() const override
         {
@@ -1097,6 +1194,11 @@ namespace details {
             , n_(n)
         { }
 
+        void set(std::int64_t id, const value_type& value) override
+        {
+            n_->set(id, value);
+        }
+
         [[nodiscard]] value_type compute() const override
         {
             using std::atan;
@@ -1137,6 +1239,11 @@ namespace details {
             : Node<value_type, allocator_type>(NodeType::acot)
             , n_(n)
         { }
+
+        void set(std::int64_t id, const value_type& value) override
+        {
+            n_->set(id, value);
+        }
 
         [[nodiscard]] value_type compute() const override
         {

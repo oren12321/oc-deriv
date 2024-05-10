@@ -642,8 +642,8 @@ TEST(Derivation, can_perform_backward_derivation)
 
 
         // z = sin(x^2 + 3xy + 1)
-        auto x = variable(0, 3.f);
-        auto y = variable(1, 2.f);
+        auto x = variable(0, 0.f);
+        auto y = variable(1, 0.f);
 
         auto z1 = sin(
             add(
@@ -653,6 +653,9 @@ TEST(Derivation, can_perform_backward_derivation)
                         constant(3.f),
                         multiply(x, y))),
                 constant(1.f)));
+
+        z1->set(0, 3.f);
+        z1->set(1, 2.f);
 
         EXPECT_EQ(std::sin(28.f), z1->compute());
         EXPECT_EQ(12.f * std::cos(28.f), z1->backward(0)->compute());
