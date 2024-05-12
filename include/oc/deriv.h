@@ -7,6 +7,7 @@
 #include <type_traits>
 #include <cmath>
 #include <ostream>
+#include <tuple>
 
 namespace oc::deriv {
 namespace details {
@@ -66,6 +67,13 @@ namespace details {
         unknown,
     };
 
+    enum class OpType {
+        none,
+        unary,
+        binary,
+        unknown,
+    };
+
     template <typename T, typename Internal_allocator = std::allocator<T>>
     class Node {
     public:
@@ -74,22 +82,32 @@ namespace details {
         using value_type = T;
         using allocator_type = Internal_allocator;
 
-        Node(NodeType type)
+        Node(NodeType type, OpType op)
             : type_(type)
+            , op_(op)
         { }
 
-        virtual void set(std::int64_t, const T&) = 0;
+        virtual void set(std::int64_t, const value_type&) = 0;
         virtual value_type compute() const = 0;
-        virtual std::shared_ptr<Node<T, Internal_allocator>> backward(std::int64_t id) const = 0;
+        virtual std::shared_ptr<Node<value_type, allocator_type>> backward(std::int64_t id) const = 0;
         virtual std::ostream& print(std::ostream& os) const = 0;
+
+        // return value options: (nullptr, nullptr), (n, nullptr), (n1, n2)
+        virtual std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const = 0;
 
         NodeType type() const
         {
             return type_;
         }
 
+        OpType op() const
+        {
+            return op_;
+        }
+
     protected:
         NodeType type_ = NodeType::unknown;
+        OpType op_ = OpType::unknown;
     };
 
     template <node_type N, typename... Args>
@@ -105,7 +123,7 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         explicit Const(const T& value)
-            : Node<value_type, allocator_type>(NodeType::constant)
+            : Node<value_type, allocator_type>(NodeType::constant, OpType::none)
             , value_(value)
         { }
 
@@ -127,6 +145,11 @@ namespace details {
             return os;
         }
 
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(nullptr, nullptr);
+        }
+
     private:
         value_type value_;
     };
@@ -143,7 +166,7 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         explicit Var(std::int64_t id, const value_type& value = zero_value<value_type>())
-            : Node<value_type, allocator_type>(NodeType::variable)
+            : Node<value_type, allocator_type>(NodeType::variable, OpType::none)
             , id_(id)
             , value_(value)
         { }
@@ -172,6 +195,16 @@ namespace details {
             return os;
         }
 
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(nullptr, nullptr);
+        }
+
+        std::int64_t id() const
+        {
+            return id_;
+        }
+
     private:
         std::int64_t id_;
         value_type value_;
@@ -189,7 +222,7 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         Add(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
-            : Node<value_type, allocator_type>(NodeType::add)
+            : Node<value_type, allocator_type>(NodeType::add, OpType::binary)
             , n1_(n1)
             , n2_(n2)
         { }
@@ -214,6 +247,11 @@ namespace details {
         {
             os << '(' << n1_ << '+' << n2_ << ')';
             return os;
+        }
+
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(n1_, n2_);
         }
 
     private:
@@ -263,7 +301,7 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         Sub(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
-            : Node<value_type, allocator_type>(NodeType::subtract)
+            : Node<value_type, allocator_type>(NodeType::subtract, OpType::binary)
             , n1_(n1)
             , n2_(n2)
         { }
@@ -288,6 +326,11 @@ namespace details {
         {
             os << '(' << n1_ << '-' << n2_ << ')';
             return os;
+        }
+
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(n1_, n2_);
         }
 
     private:
@@ -337,7 +380,7 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         Neg(const std::shared_ptr<Node<T, Internal_allocator>>& n)
-            : Node<value_type, allocator_type>(NodeType::negate)
+            : Node<value_type, allocator_type>(NodeType::negate, OpType::unary)
             , n_(n)
         { }
 
@@ -360,6 +403,11 @@ namespace details {
         {
             os << '(' << '-' << n_ << ')';
             return os;
+        }
+
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(n_, nullptr);
         }
 
     private:
@@ -390,7 +438,7 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         Mul(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
-            : Node<value_type, allocator_type>(NodeType::multiply)
+            : Node<value_type, allocator_type>(NodeType::multiply, OpType::binary)
             , n1_(n1)
             , n2_(n2)
         { }
@@ -415,6 +463,11 @@ namespace details {
         {
             os << '(' << n1_ << '*' << n2_ << ')';
             return os;
+        }
+
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(n1_, n2_);
         }
 
     private:
@@ -472,7 +525,7 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         Div(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
-            : Node<value_type, allocator_type>(NodeType::divide)
+            : Node<value_type, allocator_type>(NodeType::divide, OpType::binary)
             , n1_(n1)
             , n2_(n2)
         { }
@@ -502,6 +555,11 @@ namespace details {
         {
             os << '(' << n1_ << '/' << n2_ << ')';
             return os;
+        }
+
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(n1_, n2_);
         }
 
     private:
@@ -547,7 +605,7 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         Sin(const std::shared_ptr<Node<T, Internal_allocator>>& n)
-            : Node<value_type, allocator_type>(NodeType::sin)
+            : Node<value_type, allocator_type>(NodeType::sin, OpType::unary)
             , n_(n)
         { }
 
@@ -573,6 +631,11 @@ namespace details {
             return os;
         }
 
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(n_, nullptr);
+        }
+
     private:
         std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
@@ -589,7 +652,7 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         Cos(const std::shared_ptr<Node<T, Internal_allocator>>& v)
-            : Node<value_type, allocator_type>(NodeType::cos)
+            : Node<value_type, allocator_type>(NodeType::cos, OpType::unary)
             , n_(v)
         { }
 
@@ -615,6 +678,11 @@ namespace details {
             return os;
         }
 
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(n_, nullptr);
+        }
+
     private:
         std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
@@ -634,7 +702,7 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         Tan(const std::shared_ptr<Node<T, Internal_allocator>>& v)
-            : Node<value_type, allocator_type>(NodeType::tan)
+            : Node<value_type, allocator_type>(NodeType::tan, OpType::unary)
             , n_(v)
         { }
 
@@ -660,6 +728,11 @@ namespace details {
             return os;
         }
 
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(n_, nullptr);
+        }
+
     private:
         std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
@@ -676,7 +749,7 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         Sec(const std::shared_ptr<Node<T, Internal_allocator>>& v)
-            : Node<value_type, allocator_type>(NodeType::sec)
+            : Node<value_type, allocator_type>(NodeType::sec, OpType::unary)
             , n_(v)
         { }
 
@@ -707,6 +780,11 @@ namespace details {
             return os;
         }
 
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(n_, nullptr);
+        }
+
     private:
         std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
@@ -726,7 +804,7 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         Cot(const std::shared_ptr<Node<T, Internal_allocator>>& v)
-            : Node<value_type, allocator_type>(NodeType::cot)
+            : Node<value_type, allocator_type>(NodeType::cot, OpType::unary)
             , n_(v)
         { }
 
@@ -757,6 +835,11 @@ namespace details {
             return os;
         }
 
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(n_, nullptr);
+        }
+
     private:
         std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
@@ -773,7 +856,7 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         Csc(const std::shared_ptr<Node<T, Internal_allocator>>& v)
-            : Node<value_type, allocator_type>(NodeType::csc)
+            : Node<value_type, allocator_type>(NodeType::csc, OpType::unary)
             , n_(v)
         { }
 
@@ -804,6 +887,11 @@ namespace details {
             return os;
         }
 
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(n_, nullptr);
+        }
+
     private:
         std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
@@ -820,7 +908,7 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         Exp(const std::shared_ptr<Node<T, Internal_allocator>>& v)
-            : Node<value_type, allocator_type>(NodeType::exp)
+            : Node<value_type, allocator_type>(NodeType::exp, OpType::unary)
             , n_(v)
         { }
 
@@ -846,6 +934,11 @@ namespace details {
             return os;
         }
 
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(n_, nullptr);
+        }
+
     private:
         std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
@@ -862,7 +955,7 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         Ln(const std::shared_ptr<Node<T, Internal_allocator>>& v)
-            : Node<value_type, allocator_type>(NodeType::ln)
+            : Node<value_type, allocator_type>(NodeType::ln, OpType::unary)
             , n_(v)
         { }
 
@@ -893,6 +986,11 @@ namespace details {
             return os;
         }
 
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(n_, nullptr);
+        }
+
     private:
         std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
@@ -909,9 +1007,9 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         Pow_fn(const std::shared_ptr<Node<T, Internal_allocator>>& f, const T& n)
-            : Node<value_type, allocator_type>(NodeType::pow_fn)
+            : Node<value_type, allocator_type>(NodeType::pow_fn, OpType::binary)
             , f_(f)
-            , n_(n)
+            , n_(constant<T, Internal_allocator>(n))
         { }
 
         void set(std::int64_t id, const value_type& value) override
@@ -922,12 +1020,12 @@ namespace details {
         [[nodiscard]] value_type compute() const override
         {
             using std::pow;
-            return pow(f_->compute(), n_);
+            return pow(f_->compute(), n_->compute());
         }
 
         [[nodiscard]] std::shared_ptr<Node<value_type, allocator_type>> backward(std::int64_t id) const override
         {
-            return f_->backward(id) * n_ * (f_ ^ (n_ - unit_value<T>()));
+            return f_->backward(id) * n_ * (f_ ^ (constant<value_type, allocator_type>(n_->compute() - unit_value<T>())));
         }
 
         std::ostream& print(std::ostream& os) const override
@@ -936,9 +1034,14 @@ namespace details {
             return os;
         }
 
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(f_, n_);
+        }
+
     private:
         std::shared_ptr<Node<T, Internal_allocator>> f_;
-        T n_;
+        std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
     template <typename T, typename Internal_allocator>
     [[nodiscard]] auto pow(const std::shared_ptr<Node<T, Internal_allocator>>& f, const T& n)
@@ -966,8 +1069,8 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         Pow_af(const T& a, const std::shared_ptr<Node<T, Internal_allocator>>& f)
-            : Node<value_type, allocator_type>(NodeType::pow_af)
-            , a_(a)
+            : Node<value_type, allocator_type>(NodeType::pow_af, OpType::binary)
+            , a_(constant<T, Internal_allocator>(a))
             , f_(f)
         { }
 
@@ -979,13 +1082,13 @@ namespace details {
         [[nodiscard]] value_type compute() const override
         {
             using std::pow;
-            return pow(a_, f_->compute());
+            return pow(a_->compute(), f_->compute());
         }
 
         [[nodiscard]] std::shared_ptr<Node<value_type, allocator_type>> backward(std::int64_t id) const override
         {
             using std::log;
-            return f_->backward(id) * (a_ ^ f_) * log(a_);
+            return f_->backward(id) * (a_->compute() ^ f_) * log(a_->compute());
         }
 
         std::ostream& print(std::ostream& os) const override
@@ -994,8 +1097,13 @@ namespace details {
             return os;
         }
 
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(a_, f_);
+        }
+
     private:
-        T a_;
+        std::shared_ptr<Node<T, Internal_allocator>> a_;
         std::shared_ptr<Node<T, Internal_allocator>> f_;
     };
     template <typename T, typename Internal_allocator>
@@ -1024,7 +1132,7 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         Pow_fg(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
-            : Node<value_type, allocator_type>(NodeType::pow_fg)
+            : Node<value_type, allocator_type>(NodeType::pow_fg, OpType::binary)
             , n1_(n1)
             , n2_(n2)
         { }
@@ -1050,6 +1158,11 @@ namespace details {
         {
             os << '(' << n1_ << ")^" << '(' << n2_ << ')';
             return os;
+        }
+
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(n1_, n2_);
         }
 
     private:
@@ -1098,7 +1211,7 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         Asin(const std::shared_ptr<Node<T, Internal_allocator>>& n)
-            : Node<value_type, allocator_type>(NodeType::asin)
+            : Node<value_type, allocator_type>(NodeType::asin, OpType::unary)
             , n_(n)
         { }
 
@@ -1128,6 +1241,11 @@ namespace details {
             return os;
         }
 
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(n_, nullptr);
+        }
+
     private:
         std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
@@ -1144,7 +1262,7 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         Acos(const std::shared_ptr<Node<T, Internal_allocator>>& n)
-            : Node<value_type, allocator_type>(NodeType::acos)
+            : Node<value_type, allocator_type>(NodeType::acos, OpType::unary)
             , n_(n)
         { }
 
@@ -1174,6 +1292,11 @@ namespace details {
             return os;
         }
 
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(n_, nullptr);
+        }
+
     private:
         std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
@@ -1190,7 +1313,7 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         Atan(const std::shared_ptr<Node<T, Internal_allocator>>& n)
-            : Node<value_type, allocator_type>(NodeType::atan)
+            : Node<value_type, allocator_type>(NodeType::atan, OpType::unary)
             , n_(n)
         { }
 
@@ -1220,6 +1343,11 @@ namespace details {
             return os;
         }
 
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(n_, nullptr);
+        }
+
     private:
         std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
@@ -1236,7 +1364,7 @@ namespace details {
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
         Acot(const std::shared_ptr<Node<T, Internal_allocator>>& n)
-            : Node<value_type, allocator_type>(NodeType::acot)
+            : Node<value_type, allocator_type>(NodeType::acot, OpType::unary)
             , n_(n)
         { }
 
@@ -1271,6 +1399,11 @@ namespace details {
             return os;
         }
 
+        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
+        {
+            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(n_, nullptr);
+        }
+
     private:
         std::shared_ptr<Node<T, Internal_allocator>> n_;
     };
@@ -1278,6 +1411,60 @@ namespace details {
     [[nodiscard]] auto acot(const std::shared_ptr<Node<T, Internal_allocator>>& n)
     {
         return make_node<Acot<T, Internal_allocator>>(n);
+    }
+
+    template <node_type N>
+    [[nodiscard]] std::shared_ptr<Node<typename N::value_type, typename N::allocator_type>> zero_value()
+    {
+        return constant<typename N::value_type, typename N::allocator_type>(0);
+    }
+
+    template <node_type N>
+    [[nodiscard]] std::shared_ptr<Node<typename N::value_type, typename N::allocator_type>> unit_value()
+    {
+        return constant<typename N::value_type, typename N::allocator_type>(1);
+    }
+
+    template <node_type N>
+    [[nodiscard]] std::shared_ptr<Node<typename N::value_type, typename N::allocator_type>> full_value(const typename N::value_type& value)
+    {
+        return constant<typename N::value_type, typename N::allocator_type>(value);
+    }
+
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] bool operator==(
+        const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
+    {
+        if (n1.get() == n2.get()) {
+            return true;
+        }
+
+        if (n1->type() != n2->type()) {
+            return false;
+        }
+
+        if (n1->type() == NodeType::constant && n2->type() == NodeType::constant) {
+            auto c1 = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n1);
+            auto c2 = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n2);
+            return c1 && c2 && (c1->compute() == c2->compute());
+        }
+
+        if (n1->type() == NodeType::variable && n2->type() == NodeType::variable) {
+            auto c1 = std::dynamic_pointer_cast<Var<T, Internal_allocator>>(n1);
+            auto c2 = std::dynamic_pointer_cast<Var<T, Internal_allocator>>(n2);
+            return c1 && c2 && (c1->id() == c2->id());
+        }
+
+        if (n1->op() == OpType::unary && n2->op() == OpType::unary) {
+            return std::get<0>(n1->children()) == std::get<0>(n2->children());
+        }
+
+        if (n1->op() == OpType::binary && n2->op() == OpType::binary) {
+            return (std::get<0>(n1->children()) == std::get<0>(n2->children()))
+                && (std::get<1>(n1->children()) == std::get<1>(n2->children()));
+        }
+
+        return false;
     }
 }
 

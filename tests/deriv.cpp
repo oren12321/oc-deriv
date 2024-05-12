@@ -685,7 +685,7 @@ TEST(Derivation, can_print_a_complex_function)
     std::stringstream ss;
     ss << g;
 
-    EXPECT_EQ(ss.str(), "((ln((x_0+x_1)))^(2))^(sin(((x_0+x_1)*x_0)))");
+    EXPECT_EQ(ss.str(), "((ln((x_0+x_1)))^((2)))^(sin(((x_0+x_1)*x_0)))");
 }
 
 namespace oc::deriv {
@@ -728,4 +728,27 @@ TEST(Derivation, can_derive_collection_by_single_type)
     });
 
     EXPECT_EQ(sum, 22.0);
+}
+
+TEST(Derivation, nodes_can_be_compared)
+{
+    using namespace oc::deriv;
+
+    auto x1 = variable(0, 5.0);
+    auto x2 = variable(0, 5.0);
+    auto y = variable(1, 5.0);
+
+    auto z1 = (5.0 ^ ((5.0 * sin(x1 + y)) ^ 5.0)) ^ cos(x1);
+    auto z2 = (5.0 ^ ((5.0 * sin(x2 + y)) ^ 5.0)) ^ cos(x2);
+
+    EXPECT_EQ(z1, z1);
+    EXPECT_EQ(z1, z2);
+
+    x1->set(0, 1.0);
+    EXPECT_EQ(z1, z2);
+
+    auto z3 = (5.0 ^ ((15.0 * sin(x1 + y)) ^ 5.0)) ^ cos(x1);
+
+    EXPECT_NE(z3, z1);
+    EXPECT_NE(z3, z2);
 }
