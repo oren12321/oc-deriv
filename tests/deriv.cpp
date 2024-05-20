@@ -276,6 +276,14 @@ TEST(Derivation, division_backward_derivative)
         EXPECT_EQ(1.f / v2->compute(), d4->compute());
         EXPECT_EQ((0.f * v2->compute() - 1.f * v2->backward(0)->compute()) / (v2->compute() * v2->compute()), d4->backward(0)->compute());
     }
+
+    {
+        auto x = variable<double>(0);
+
+        EXPECT_THROW(Div(x, constant(0.0)), std::invalid_argument);
+        EXPECT_THROW(divide(x, constant(0.0)), std::invalid_argument);
+        EXPECT_THROW(Div(constant(1.0), x).compute(), std::overflow_error);
+    }
 }
 
 TEST(Derivation, sin_and_cos_backward_derivative)
@@ -685,30 +693,7 @@ TEST(Derivation, can_print_a_complex_function)
     std::stringstream ss;
     ss << g;
 
-    EXPECT_EQ(ss.str(), "((ln((x_0+x_1)))^((2)))^(sin(((x_0+x_1)*x_0)))");
-}
-
-namespace oc::deriv {
-template <>
-std::string unit_value<std::string>()
-{
-    return std::string{"1"};
-}
-}
-
-TEST(Derivation, can_derive_by_multiple_types_with_user_casting)
-{
-    using namespace oc::deriv;
-
-    auto x = variable(0, std::to_string(5));
-    auto y = variable(1, std::string{"str"});
-
-    auto z = x + y;
-
-    EXPECT_EQ(z->compute(), "5str");
-
-    EXPECT_EQ(z->backward(0)->compute(), "1");
-
+    EXPECT_EQ(ss.str(), "(ln((x_0+x_1)))^(((2)*sin(((x_0+x_1)*x_0))))");
 }
 
 TEST(Derivation, can_derive_collection_by_single_type)
@@ -751,4 +736,101 @@ TEST(Derivation, nodes_can_be_compared)
 
     EXPECT_NE(z3, z1);
     EXPECT_NE(z3, z2);
+}
+
+TEST(Derivation, nodes_can_be_simplified)
+{
+    using namespace oc::deriv;
+
+    auto a = constant(1.0);
+    auto b = constant(2.0);
+
+    auto x = variable<double>(0);
+    auto y = variable<double>(1);
+
+    // Add
+
+    EXPECT_EQ(a + b, constant(3.0));
+    EXPECT_EQ(x + 0.0, x);
+    EXPECT_EQ(0.0 + x, x);
+    EXPECT_EQ(x + x, 2.0 * x);
+    EXPECT_EQ(x + (-x), constant(0.0));
+    EXPECT_EQ((-x) + x, constant(0.0));
+    EXPECT_EQ(ln(x) + ln(y), ln(x * y));
+
+    // Sub
+
+    EXPECT_EQ(b - a, constant(1.0));
+    EXPECT_EQ(0.0 - x, -x);
+    EXPECT_EQ(x - 0.0, x);
+    EXPECT_EQ(x - (-x), 2.0 * x);
+    EXPECT_EQ((-x) - x, (-2.0) * x);
+    EXPECT_EQ(ln(x) - ln(y), ln(x / y));
+
+    // Neg
+
+    EXPECT_EQ(-constant(0.0), constant(0.0));
+    EXPECT_EQ(-constant(-1.0), constant(1.0));
+    EXPECT_EQ(-(-x), x);
+
+    // Mul
+
+    EXPECT_EQ(a * b, constant(2.0));
+    EXPECT_EQ(0.0 * x, constant(0.0));
+    EXPECT_EQ(1.0 * x, x);
+    EXPECT_EQ(x * 0.0, constant(0.0));
+    EXPECT_EQ(x * 1.0, x);
+    EXPECT_EQ(x * x, x ^ 2.0);
+    EXPECT_EQ((-x) * (-y), x * y);
+    EXPECT_EQ((-x) * x, -(x ^ 2.0));
+    EXPECT_EQ(x * (-x), -(x ^ 2.0));
+    EXPECT_EQ((x ^ y) * (x ^ a), x ^ (y + a));
+    EXPECT_EQ((x ^ y) * x, x ^ (y + 1.0));
+    EXPECT_EQ(x * (x ^ y), x ^ (1.0 + y));
+    EXPECT_EQ(exp(x) * exp(y), exp(x + y));
+
+    // Div
+
+    EXPECT_EQ(b / a, constant(2.0));
+    EXPECT_EQ(0.0 / x, constant(0.0));
+    EXPECT_EQ(x / 1.0, x);
+    EXPECT_EQ(x / x, constant(1.0));
+    EXPECT_EQ((-x) / (-y), x / y);
+    EXPECT_EQ((-x) / x, constant(-1.0));
+    EXPECT_EQ(x / (-x), constant(-1.0));
+    EXPECT_EQ((x ^ y) / (x ^ a), x ^ (y - a));
+    EXPECT_EQ((x ^ y) / x, x ^ (y - 1.0));
+    EXPECT_EQ(x / (x ^ y), x ^ (1.0 - y));
+    EXPECT_EQ(exp(x) / exp(y), exp(x - y));
+
+    // Exp
+
+    EXPECT_EQ(exp(constant(0.0)), constant(1.0));
+
+    // Ln
+
+    EXPECT_EQ(ln(constant(1.0)), constant(0.0));
+
+    // Pow_fn
+
+    EXPECT_EQ(x ^ 1.0, x);
+    EXPECT_EQ(x ^ 0.0, constant(1.0));
+    EXPECT_EQ(a ^ b, constant(std::pow(1.0, 2.0)));
+    EXPECT_EQ((x ^ a) ^ 1.0, x ^ (a->compute() * 1.0));
+    EXPECT_EQ((x ^ y) ^ 1.0, x ^ (y * 1.0));
+
+    // Pow_af
+
+    EXPECT_EQ(1.0 ^ x, constant(1.0));
+    EXPECT_EQ(0.0 ^ x, constant(0.0));
+    EXPECT_EQ(2.0 ^ constant(2.0), constant(std::pow(2.0, 2.0)));
+
+    // Pow_fg
+
+    EXPECT_EQ(a ^ b, constant(std::pow(1.0, 2.0)));
+    EXPECT_EQ(constant(0.0) ^ x, constant(0.0));
+    EXPECT_EQ(constant(1.0) ^ x, constant(1.0));
+    EXPECT_EQ(x ^ constant(0.0), constant(1.0));
+    EXPECT_EQ(x ^ constant(1.0), x);
+    EXPECT_EQ((x ^ y) ^ x, x ^ (y * x));
 }

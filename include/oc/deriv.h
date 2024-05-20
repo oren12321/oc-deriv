@@ -24,9 +24,9 @@ namespace details {
     }
 
     template <typename T>
-    [[nodiscard]] T full_value(const T& value)
+    [[nodiscard]] T full_value(const auto& value)
     {
-        return T{value};
+        return static_cast<T>(value);
     }
 
     struct node_tag { };
@@ -262,18 +262,28 @@ namespace details {
     [[nodiscard]] auto add(
         std::shared_ptr<Node<T, Internal_allocator>> n1, std::shared_ptr<Node<T, Internal_allocator>> n2)
     {
-        if (n1->type() == NodeType::constant) {
-            auto c = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n1);
-            if (c && c->compute() == zero_value<T>()) {
-                return n2;
-            }
+        if (n1->type() == NodeType::constant && n2->type() == NodeType::constant) {
+            return constant<T, Internal_allocator>(n1->compute() + n2->compute());
         }
 
-        if (n2->type() == NodeType::constant) {
-            auto c = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n2);
-            if (c && c->compute() == zero_value<T>()) {
-                return n1;
-            }
+        if (n1->type() == NodeType::constant && n1->compute() == zero_value<T>()) {
+            return n2;
+        }
+
+        if (n2->type() == NodeType::constant && n2->compute() == zero_value<T>()) {
+            return n1;
+        }
+
+        if (n1 == n2) {
+            return multiply(constant<T, Internal_allocator>(full_value<T>(2)), n1);
+        }
+
+        if (n1 == negate(n2) || negate(n1) == n2) {
+            return constant<T, Internal_allocator>(zero_value<T>());
+        }
+
+        if (n1->type() == NodeType::ln && n2->type() == NodeType::ln) {
+            return ln(multiply(std::get<0>(n1->children()), std::get<0>(n2->children())));
         }
 
         return make_node<Add<T, Internal_allocator>>(n1, n2);
@@ -341,18 +351,34 @@ namespace details {
     [[nodiscard]] auto subtract(
         const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
     {
-        if (n1->type() == NodeType::constant) {
-            auto c = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n1);
-            if (c && c->compute() == zero_value<T>()) {
-                return -n2;
-            }
+        if (n1->type() == NodeType::constant && n2->type() == NodeType::constant) {
+            return constant<T, Internal_allocator>(n1->compute() - n2->compute());
         }
 
-        if (n2->type() == NodeType::constant) {
-            auto c = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n2);
-            if (c && c->compute() == zero_value<T>()) {
-                return n1;
-            }
+        if (n1->type() == NodeType::constant && n1->compute() == zero_value<T>()) {
+            return negate(n2);
+        }
+
+        if (n2->type() == NodeType::constant && n2->compute() == zero_value<T>()) {
+            return n1;
+        }
+
+        if (n1 == n2) {
+            return constant<T, Internal_allocator>(zero_value<T>());
+        }
+
+        if (n1 == negate(n2) && n2->type() == NodeType::negate) {
+            return multiply(constant<T, Internal_allocator>(full_value<T>(2)), n1);
+        }
+
+        if (n1 == negate(n2) && n1->type() == NodeType::negate) {
+            return multiply(constant<T, Internal_allocator>(-full_value<T>(2)), n2);
+        }
+
+        if (n1->type() == NodeType::ln && n2->type() == NodeType::ln
+            && !(std::get<0>(n2->children())->type() == NodeType::constant
+                && std::get<0>(n2->children())->compute() == zero_value<T>())) {
+            return ln(divide(std::get<0>(n1->children()), std::get<0>(n2->children())));
         }
 
         return make_node<Sub<T, Internal_allocator>>(n1, n2);
@@ -416,11 +442,16 @@ namespace details {
     template <typename T, typename Internal_allocator>
     [[nodiscard]] auto negate(const std::shared_ptr<Node<T, Internal_allocator>>& n)
     {
-        if (n->type() == NodeType::constant) {
-            auto c = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n);
-            if (c && c->compute() == zero_value<T>()) {
-                return n;
-            }
+        if (n->type() == NodeType::constant && n->compute() == zero_value<T>()) {
+            return n;
+        }
+
+        if (n->type() == NodeType::constant && n->compute() < zero_value<T>()) {
+            return constant<T, Internal_allocator>(-n->compute());
+        }
+
+        if (n->type() == NodeType::negate) {
+            return std::get<0>(n->children());
         }
 
         return make_node<Neg<T, Internal_allocator>>(n);
@@ -478,26 +509,60 @@ namespace details {
     [[nodiscard]] auto multiply(
         const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
     {
-        if (n1->type() == NodeType::constant) {
-            auto c = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n1);
-            if (c && c->compute() == zero_value<T>()) {
-                return constant<T, Internal_allocator>(
-                    zero_value<T>());
-            }
-            if (c && c->compute() == unit_value<T>()) {
-                return n2;
-            }
+        if (n1->type() == NodeType::constant && n2->type() == NodeType::constant) {
+            return constant<T, Internal_allocator>(n1->compute() * n2->compute());
         }
 
-        if (n2->type() == NodeType::constant) {
-            auto c = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n2);
-            if (c && c->compute() == zero_value<T>()) {
-                return constant<T, Internal_allocator>(
-                    zero_value<T>());
-            }
-            if (c && c->compute() == unit_value<T>()) {
-                return n1;
-            }
+        if (n1->type() == NodeType::constant && n1->compute() == zero_value<T>()) {
+            return constant<T, Internal_allocator>(zero_value<T>());
+        }
+
+        if (n1->type() == NodeType::constant && n1->compute() == unit_value<T>()) {
+            return n2;
+        }
+
+        if (n2->type() == NodeType::constant && n2->compute() == zero_value<T>()) {
+            return constant<T, Internal_allocator>(zero_value<T>());
+        }
+
+        if (n2->type() == NodeType::constant && n2->compute() == unit_value<T>()) {
+            return n1;
+        }
+
+        if (n1->type() == NodeType::negate && n2->type() == NodeType::negate) {
+            return multiply(std::get<0>(n1->children()), std::get<0>(n2->children()));
+        }
+
+        if (n1 == n2) {
+            return pow(n1, full_value<T>(2));
+        }
+
+        if (n1 == negate(n2) && n1->type() == NodeType::negate) {
+            return negate(pow(n2, full_value<T>(2)));
+        }
+
+        if (n1 == negate(n2) && n2->type() == NodeType::negate) {
+            return negate(pow(n1, full_value<T>(2)));
+        }
+
+        if ((n1->type() == NodeType::pow_fn || n1->type() == NodeType::pow_af || n1->type() == NodeType::pow_fg)
+            && (n2->type() == NodeType::pow_fn || n2->type() == NodeType::pow_af || n2->type() == NodeType::pow_fg)
+            && std::get<0>(n1->children()) == std::get<0>(n2->children())) {
+            return pow(std::get<0>(n1->children()), add(std::get<1>(n1->children()), std::get<1>(n2->children())));
+        }
+
+        if ((n1->type() == NodeType::pow_fn || n1->type() == NodeType::pow_af || n1->type() == NodeType::pow_fg)
+            && std::get<0>(n1->children()) == n2) {
+            return pow(n2, add(std::get<1>(n1->children()), constant<T, Internal_allocator>(unit_value<T>())));
+        }
+
+        if ((n2->type() == NodeType::pow_fn || n2->type() == NodeType::pow_af || n2->type() == NodeType::pow_fg)
+            && n1 == std::get<0>(n2->children())) {
+            return pow(n1, add(constant<T, Internal_allocator>(unit_value<T>()), std::get<1>(n2->children())));
+        }
+
+        if (n1->type() == NodeType::exp && n2->type() == NodeType::exp) {
+            return exp(add(std::get<0>(n1->children()), std::get<0>(n2->children())));
         }
 
         return make_node<Mul<T, Internal_allocator>>(n1, n2);
@@ -528,7 +593,11 @@ namespace details {
             : Node<value_type, allocator_type>(NodeType::divide, OpType::binary)
             , n1_(n1)
             , n2_(n2)
-        { }
+        {
+            if (n2_->type() == NodeType::constant && n2_->compute() == zero_value<T>()) {
+                throw std::invalid_argument{"constant zero node n2"};
+            }
+        }
 
         void set(std::int64_t id, const value_type& value) override
         {
@@ -570,11 +639,52 @@ namespace details {
     [[nodiscard]] auto divide(
         const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
     {
-        if (n1->type() == NodeType::constant) {
-            auto c = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n1);
-            if (c && c->compute() == zero_value<T>() && n2->compute() != zero_value<T>()) {
-                return constant<T, Internal_allocator>(zero_value<T>());
-            }
+        if (n2->type() == NodeType::constant && n2->compute() == zero_value<T>()) {
+            throw std::invalid_argument{"constant zero node n2"};
+        }
+
+        if (n1->type() == NodeType::constant && n2->type() == NodeType::constant) {
+            return constant<T, Internal_allocator>(n1->compute() / n2->compute());
+        }
+
+        if (n1->type() == NodeType::constant && n1->compute() == zero_value<T>()) {
+            return constant<T, Internal_allocator>(zero_value<T>());
+        }
+
+        if (n2->type() == NodeType::constant && n2->compute() == unit_value<T>()) {
+            return n1;
+        }
+
+        if (n1->type() == NodeType::negate && n2->type() == NodeType::negate) {
+            return divide(std::get<0>(n1->children()), std::get<0>(n2->children()));
+        }
+
+        if (n1 == n2) {
+            return constant<T, Internal_allocator>(unit_value<T>());
+        }
+
+        if (n1 == negate(n2) || negate(n1) == n2) {
+            return constant<T, Internal_allocator>(-unit_value<T>());
+        }
+
+        if ((n1->type() == NodeType::pow_fn || n1->type() == NodeType::pow_af || n1->type() == NodeType::pow_fg)
+            && (n2->type() == NodeType::pow_fn || n2->type() == NodeType::pow_af || n2->type() == NodeType::pow_fg)
+            && std::get<0>(n1->children()) == std::get<0>(n2->children())) {
+            return pow(std::get<0>(n1->children()), subtract(std::get<1>(n1->children()), std::get<1>(n2->children())));
+        }
+
+        if ((n1->type() == NodeType::pow_fn || n1->type() == NodeType::pow_af || n1->type() == NodeType::pow_fg)
+            && std::get<0>(n1->children()) == n2) {
+            return pow(n2, subtract(std::get<1>(n1->children()), constant<T, Internal_allocator>(unit_value<T>())));
+        }
+
+        if ((n2->type() == NodeType::pow_fn || n2->type() == NodeType::pow_af || n2->type() == NodeType::pow_fg)
+            && n1 == std::get<0>(n2->children())) {
+            return pow(n1, subtract(constant<T, Internal_allocator>(unit_value<T>()), std::get<1>(n2->children())));
+        }
+
+        if (n1->type() == NodeType::exp && n2->type() == NodeType::exp) {
+            return exp(subtract(std::get<0>(n1->children()), std::get<0>(n2->children())));
         }
 
         return make_node<Div<T, Internal_allocator>>(n1, n2);
@@ -945,6 +1055,10 @@ namespace details {
     template <typename T, typename Internal_allocator>
     [[nodiscard]] auto exp(const std::shared_ptr<Node<T, Internal_allocator>>& n)
     {
+        if (n->type() == NodeType::constant && n->compute() == zero_value<T>()) {
+            return constant<T, Internal_allocator>(unit_value<T>());
+        }
+
         return make_node<Exp<T, Internal_allocator>>(n);
     }
 
@@ -997,6 +1111,10 @@ namespace details {
     template <typename T, typename Internal_allocator>
     [[nodiscard]] auto ln(const std::shared_ptr<Node<T, Internal_allocator>>& n)
     {
+        if (n->type() == NodeType::constant && n->compute() == unit_value<T>()) {
+            return constant<T, Internal_allocator>(zero_value<T>());
+        }
+
         return make_node<Ln<T, Internal_allocator>>(n);
     }
 
@@ -1052,6 +1170,20 @@ namespace details {
 
         if (n == zero_value<T>()) {
             return constant<T, Internal_allocator>(unit_value<T>());
+        }
+
+        if (f->type() == NodeType::constant) {
+            using std::pow;
+            return constant<T, Internal_allocator>(pow(f->compute(), n));
+        }
+
+        if (f->type() == NodeType::pow_fn) {
+            return pow(std::get<0>(f->children()), std::get<1>(f->children())->compute() * n);
+        }
+
+        if (f->type() == NodeType::pow_af || f->type() == NodeType::pow_fg) {
+            return pow(
+                std::get<0>(f->children()), multiply(std::get<1>(f->children()), constant<T, Internal_allocator>(n)));
         }
 
         return make_node<Pow_fn<T, Internal_allocator>>(f, n);
@@ -1117,6 +1249,11 @@ namespace details {
             return constant<T, Internal_allocator>(zero_value<T>());
         }
 
+        if (f->type() == NodeType::constant) {
+            using std::pow;
+            return constant<T, Internal_allocator>(pow(a, f->compute()));
+        }
+
         return make_node<Pow_af<T, Internal_allocator>>(a, f);
     }
     template <typename T, typename Internal_allocator>
@@ -1173,27 +1310,29 @@ namespace details {
     [[nodiscard]] auto pow(
         const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
     {
-        if (n1->type() == NodeType::constant) {
-            auto c = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n1);
-            if (c && c->compute() == zero_value<T>()) {
-                return constant<T, Internal_allocator>(
-                    zero_value<T>());
-            }
-            if (c && c->compute() == unit_value<T>()) {
-                return constant<T, Internal_allocator>(
-                    unit_value<T>());
-            }
+        if (n1->type() == NodeType::constant && n2->type() == NodeType::constant) {
+            using std::pow;
+            return constant<T, Internal_allocator>(pow(n1->compute(), n2->compute()));
         }
 
-        if (n2->type() == NodeType::constant) {
-            auto c = std::dynamic_pointer_cast<Const<T, Internal_allocator>>(n2);
-            if (c && c->compute() == zero_value<T>()) {
-                return constant<T, Internal_allocator>(
-                    unit_value<T>());
-            }
-            if (c && c->compute() == unit_value<T>()) {
-                return n1;
-            }
+        if (n1->type() == NodeType::constant && n1->compute() == zero_value<T>()) {
+            return constant<T, Internal_allocator>(zero_value<T>());
+        }
+
+        if (n1->type() == NodeType::constant && n1->compute() == unit_value<T>()) {
+            return constant<T, Internal_allocator>(unit_value<T>());
+        }
+
+        if (n2->type() == NodeType::constant && n2->compute() == zero_value<T>()) {
+            return constant<T, Internal_allocator>(unit_value<T>());
+        }
+
+        if (n2->type() == NodeType::constant && n2->compute() == unit_value<T>()) {
+            return n1;
+        }
+
+        if (n1->type() == NodeType::pow_fn || n1->type() == NodeType::pow_af || n1->type() == NodeType::pow_fg) {
+            return pow(std::get<0>(n1->children()), multiply(std::get<1>(n1->children()), n2));
         }
 
         return make_node<Pow_fg<T, Internal_allocator>>(n1, n2);
