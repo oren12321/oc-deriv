@@ -434,11 +434,11 @@ TEST(Derivation, pow_f_by_n_backward_derivative)
     {
 
         using D_var = Var<float>;
-        using D_pow = Pow_fn<float>;
+        using D_pow = Pow<float>;
 
         std::shared_ptr<D_var> v = std::make_shared<D_var>(0, 1.f);
 
-        std::shared_ptr<D_pow> p = std::make_shared<D_pow>(v, 2.f);
+        std::shared_ptr<D_pow> p = std::make_shared<D_pow>(v, constant(2.f));
         EXPECT_EQ(std::pow(1.f, 2.f), p->compute());
         EXPECT_EQ(2.f * 1.f, p->backward(0)->compute());
     }
@@ -446,7 +446,7 @@ TEST(Derivation, pow_f_by_n_backward_derivative)
     {
         auto v = variable(0, 1.f);
 
-        auto p1 = pow(v, 2.f);
+        auto p1 = pow(v, constant(2.f));
         EXPECT_EQ(std::pow(1.f, 2.f), p1->compute());
         EXPECT_EQ(2.f * 1.f, p1->backward(0)->compute());
 
@@ -464,11 +464,11 @@ TEST(Derivation, pow_a_by_f_backward_derivative)
     {
 
         using D_var = Var<float>;
-        using D_pow = Pow_af<float>;
+        using D_pow = Pow<float>;
 
         std::shared_ptr<D_var> v = std::make_shared<D_var>(0, 1.f);
 
-        std::shared_ptr<D_pow> p = std::make_shared<D_pow>(2.f, v);
+        std::shared_ptr<D_pow> p = std::make_shared<D_pow>(constant(2.f), v);
         EXPECT_EQ(std::pow(2.f, 1.f), p->compute());
         EXPECT_EQ(1.f * std::pow(2.f, 1.f) * std::log(2.f), p->backward(0)->compute());
     }
@@ -476,7 +476,7 @@ TEST(Derivation, pow_a_by_f_backward_derivative)
     {
         auto v = variable(0, 1.f);
 
-        auto p1 = pow(2.f, v);
+        auto p1 = pow(constant(2.f), v);
         EXPECT_EQ(std::pow(2.f, 1.f), p1->compute());
         EXPECT_EQ(1.f * std::pow(2.f, 1.f) * std::log(2.f), p1->backward(0)->compute());
 
@@ -495,7 +495,7 @@ TEST(Derivation, pow_f_by_g_backward_derivative)
 
         using D_var = Var<float>;
         using D_const = Const<float>;
-        using D_pow = Pow_fg<float>;
+        using D_pow = Pow<float>;
 
         std::shared_ptr<D_var> v = std::make_shared<D_var>(0, 1.f);
         std::shared_ptr<D_const> c = std::make_shared<D_const>(2.f);
@@ -656,7 +656,7 @@ TEST(Derivation, can_perform_backward_derivation)
         auto z1 = sin(
             add(
                 add(
-                    pow(x, 2.f),
+                    pow(x, constant(2.f)),
                     multiply(
                         constant(3.f),
                         multiply(x, y))),

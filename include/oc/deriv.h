@@ -55,9 +55,7 @@ namespace details {
         ln,
         multiply,
         negate,
-        pow_af,
-        pow_fg,
-        pow_fn,
+        pow,
         sec,
         sin,
         subtract,
@@ -534,30 +532,27 @@ namespace details {
         }
 
         if (n1 == n2) {
-            return pow(n1, full_value<T>(2));
+            return pow(n1, constant<T, Internal_allocator>(full_value<T>(2)));
         }
 
         if (n1 == negate(n2) && n1->type() == NodeType::negate) {
-            return negate(pow(n2, full_value<T>(2)));
+            return negate(pow(n2, constant<T, Internal_allocator>(full_value<T>(2))));
         }
 
         if (n1 == negate(n2) && n2->type() == NodeType::negate) {
-            return negate(pow(n1, full_value<T>(2)));
+            return negate(pow(n1, constant<T, Internal_allocator>(full_value<T>(2))));
         }
 
-        if ((n1->type() == NodeType::pow_fn || n1->type() == NodeType::pow_af || n1->type() == NodeType::pow_fg)
-            && (n2->type() == NodeType::pow_fn || n2->type() == NodeType::pow_af || n2->type() == NodeType::pow_fg)
+        if (n1->type() == NodeType::pow && n2->type() == NodeType::pow
             && std::get<0>(n1->children()) == std::get<0>(n2->children())) {
             return pow(std::get<0>(n1->children()), add(std::get<1>(n1->children()), std::get<1>(n2->children())));
         }
 
-        if ((n1->type() == NodeType::pow_fn || n1->type() == NodeType::pow_af || n1->type() == NodeType::pow_fg)
-            && std::get<0>(n1->children()) == n2) {
+        if (n1->type() == NodeType::pow && std::get<0>(n1->children()) == n2) {
             return pow(n2, add(std::get<1>(n1->children()), constant<T, Internal_allocator>(unit_value<T>())));
         }
 
-        if ((n2->type() == NodeType::pow_fn || n2->type() == NodeType::pow_af || n2->type() == NodeType::pow_fg)
-            && n1 == std::get<0>(n2->children())) {
+        if (n2->type() == NodeType::pow && n1 == std::get<0>(n2->children())) {
             return pow(n1, add(constant<T, Internal_allocator>(unit_value<T>()), std::get<1>(n2->children())));
         }
 
@@ -667,19 +662,16 @@ namespace details {
             return constant<T, Internal_allocator>(-unit_value<T>());
         }
 
-        if ((n1->type() == NodeType::pow_fn || n1->type() == NodeType::pow_af || n1->type() == NodeType::pow_fg)
-            && (n2->type() == NodeType::pow_fn || n2->type() == NodeType::pow_af || n2->type() == NodeType::pow_fg)
+        if (n1->type() == NodeType::pow && n2->type() == NodeType::pow
             && std::get<0>(n1->children()) == std::get<0>(n2->children())) {
             return pow(std::get<0>(n1->children()), subtract(std::get<1>(n1->children()), std::get<1>(n2->children())));
         }
 
-        if ((n1->type() == NodeType::pow_fn || n1->type() == NodeType::pow_af || n1->type() == NodeType::pow_fg)
-            && std::get<0>(n1->children()) == n2) {
+        if (n1->type() == NodeType::pow && std::get<0>(n1->children()) == n2) {
             return pow(n2, subtract(std::get<1>(n1->children()), constant<T, Internal_allocator>(unit_value<T>())));
         }
 
-        if ((n2->type() == NodeType::pow_fn || n2->type() == NodeType::pow_af || n2->type() == NodeType::pow_fg)
-            && n1 == std::get<0>(n2->children())) {
+        if (n2->type() == NodeType::pow && n1 == std::get<0>(n2->children())) {
             return pow(n1, subtract(constant<T, Internal_allocator>(unit_value<T>()), std::get<1>(n2->children())));
         }
 
@@ -1119,157 +1111,13 @@ namespace details {
     }
 
     template <typename T, typename Internal_allocator = std::allocator<T>>
-    class Pow_fn : public Node<T, Internal_allocator> {
+    class Pow : public Node<T, Internal_allocator> {
     public:
         using value_type = Node<T, Internal_allocator>::value_type;
         using allocator_type = Node<T, Internal_allocator>::allocator_type;
 
-        Pow_fn(const std::shared_ptr<Node<T, Internal_allocator>>& f, const T& n)
-            : Node<value_type, allocator_type>(NodeType::pow_fn, OpType::binary)
-            , f_(f)
-            , n_(constant<T, Internal_allocator>(n))
-        { }
-
-        void set(std::int64_t id, const value_type& value) override
-        {
-            f_->set(id, value);
-        }
-
-        [[nodiscard]] value_type compute() const override
-        {
-            using std::pow;
-            return pow(f_->compute(), n_->compute());
-        }
-
-        [[nodiscard]] std::shared_ptr<Node<value_type, allocator_type>> backward(std::int64_t id) const override
-        {
-            return f_->backward(id) * n_ * (f_ ^ (constant<value_type, allocator_type>(n_->compute() - unit_value<T>())));
-        }
-
-        std::ostream& print(std::ostream& os) const override
-        {
-            os << '(' << f_ << ")^" << '(' << n_ << ')';
-            return os;
-        }
-
-        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
-        {
-            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(f_, n_);
-        }
-
-    private:
-        std::shared_ptr<Node<T, Internal_allocator>> f_;
-        std::shared_ptr<Node<T, Internal_allocator>> n_;
-    };
-    template <typename T, typename Internal_allocator>
-    [[nodiscard]] auto pow(const std::shared_ptr<Node<T, Internal_allocator>>& f, const T& n)
-    {
-        if (n == unit_value<T>()) {
-            return f;
-        }
-
-        if (n == zero_value<T>()) {
-            return constant<T, Internal_allocator>(unit_value<T>());
-        }
-
-        if (f->type() == NodeType::constant) {
-            using std::pow;
-            return constant<T, Internal_allocator>(pow(f->compute(), n));
-        }
-
-        if (f->type() == NodeType::pow_fn) {
-            return pow(std::get<0>(f->children()), std::get<1>(f->children())->compute() * n);
-        }
-
-        if (f->type() == NodeType::pow_af || f->type() == NodeType::pow_fg) {
-            return pow(
-                std::get<0>(f->children()), multiply(std::get<1>(f->children()), constant<T, Internal_allocator>(n)));
-        }
-
-        return make_node<Pow_fn<T, Internal_allocator>>(f, n);
-    }
-    template <typename T, typename Internal_allocator>
-    [[nodiscard]] auto operator^(const std::shared_ptr<Node<T, Internal_allocator>>& f, const T& n)
-    {
-        return pow<T, Internal_allocator>(f, n);
-    }
-
-    template <typename T, typename Internal_allocator = std::allocator<T>>
-    class Pow_af : public Node<T, Internal_allocator> {
-    public:
-        using value_type = Node<T, Internal_allocator>::value_type;
-        using allocator_type = Node<T, Internal_allocator>::allocator_type;
-
-        Pow_af(const T& a, const std::shared_ptr<Node<T, Internal_allocator>>& f)
-            : Node<value_type, allocator_type>(NodeType::pow_af, OpType::binary)
-            , a_(constant<T, Internal_allocator>(a))
-            , f_(f)
-        { }
-
-        void set(std::int64_t id, const value_type& value) override
-        {
-            f_->set(id, value);
-        }
-
-        [[nodiscard]] value_type compute() const override
-        {
-            using std::pow;
-            return pow(a_->compute(), f_->compute());
-        }
-
-        [[nodiscard]] std::shared_ptr<Node<value_type, allocator_type>> backward(std::int64_t id) const override
-        {
-            using std::log;
-            return f_->backward(id) * (a_->compute() ^ f_) * log(a_->compute());
-        }
-
-        std::ostream& print(std::ostream& os) const override
-        {
-            os << '(' << a_ << ')' << "^(" << f_ << ')';
-            return os;
-        }
-
-        std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>> children() const override
-        {
-            return std::tuple<std::shared_ptr<Node<value_type, allocator_type>>, std::shared_ptr<Node<value_type, allocator_type>>>(a_, f_);
-        }
-
-    private:
-        std::shared_ptr<Node<T, Internal_allocator>> a_;
-        std::shared_ptr<Node<T, Internal_allocator>> f_;
-    };
-    template <typename T, typename Internal_allocator>
-    [[nodiscard]] auto pow(const T& a, const std::shared_ptr<Node<T, Internal_allocator>>& f)
-    {
-        if (a == unit_value<T>()) {
-            return constant<T, Internal_allocator>(unit_value<T>());
-        }
-
-        if (a == zero_value<T>()) {
-            return constant<T, Internal_allocator>(zero_value<T>());
-        }
-
-        if (f->type() == NodeType::constant) {
-            using std::pow;
-            return constant<T, Internal_allocator>(pow(a, f->compute()));
-        }
-
-        return make_node<Pow_af<T, Internal_allocator>>(a, f);
-    }
-    template <typename T, typename Internal_allocator>
-    [[nodiscard]] auto operator^(const T& a, const std::shared_ptr<Node<T, Internal_allocator>>& f)
-    {
-        return pow<T, Internal_allocator>(a, f);
-    }
-
-    template <typename T, typename Internal_allocator = std::allocator<T>>
-    class Pow_fg : public Node<T, Internal_allocator> {
-    public:
-        using value_type = Node<T, Internal_allocator>::value_type;
-        using allocator_type = Node<T, Internal_allocator>::allocator_type;
-
-        Pow_fg(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
-            : Node<value_type, allocator_type>(NodeType::pow_fg, OpType::binary)
+        Pow(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
+            : Node<value_type, allocator_type>(NodeType::pow, OpType::binary)
             , n1_(n1)
             , n2_(n2)
         { }
@@ -1288,6 +1136,12 @@ namespace details {
 
         [[nodiscard]] std::shared_ptr<Node<value_type, allocator_type>> backward(std::int64_t id) const override
         {
+            if (n2_->type() == NodeType::constant) {
+                return n1_->backward(id) * n2_ * (n1_ ^ (n2_ - constant<T, Internal_allocator>(unit_value<T>())));
+            }
+            if (n1_->type() == NodeType::constant) {
+                return n2_->backward(id) * (n1_ ^ n2_) * ln(n1_);
+            }
             return (n1_ ^ n2_) * ((n2_ / n1_) * n1_->backward(id) + ln(n1_) * n2_->backward(id));
         }
 
@@ -1331,16 +1185,28 @@ namespace details {
             return n1;
         }
 
-        if (n1->type() == NodeType::pow_fn || n1->type() == NodeType::pow_af || n1->type() == NodeType::pow_fg) {
+        if (n1->type() == NodeType::pow) {
             return pow(std::get<0>(n1->children()), multiply(std::get<1>(n1->children()), n2));
         }
 
-        return make_node<Pow_fg<T, Internal_allocator>>(n1, n2);
+        return make_node<Pow<T, Internal_allocator>>(n1, n2);
     }
     template <typename T, typename Internal_allocator>
     [[nodiscard]] auto operator^(const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
     {
         return pow<T, Internal_allocator>(n1, n2);
+    }
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto operator^(
+        const std::shared_ptr<Node<T, Internal_allocator>>& n1, const T& n2)
+    {
+        return pow<T, Internal_allocator>(n1, constant<T, Internal_allocator>(n2));
+    }
+    template <typename T, typename Internal_allocator>
+    [[nodiscard]] auto operator^(
+        const T& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
+    {
+        return pow<T, Internal_allocator>(constant<T, Internal_allocator>(n1), n2);
     }
 
     template <typename T, typename Internal_allocator = std::allocator<T>>
@@ -1630,9 +1496,7 @@ using details::Exp;
 using details::Ln;
 using details::Mul;
 using details::Neg;
-using details::Pow_af;
-using details::Pow_fg;
-using details::Pow_fn;
+using details::Pow;
 using details::Sec;
 using details::Sin;
 using details::Sub;
