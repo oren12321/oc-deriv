@@ -588,11 +588,7 @@ namespace details {
             : Node<value_type, allocator_type>(NodeType::divide, OpType::binary)
             , n1_(n1)
             , n2_(n2)
-        {
-            if (n2_->type() == NodeType::constant && n2_->compute() == zero_value<T>()) {
-                throw std::invalid_argument{"constant zero node n2"};
-            }
-        }
+        { }
 
         void set(std::int64_t id, const value_type& value) override
         {
@@ -634,11 +630,12 @@ namespace details {
     [[nodiscard]] auto divide(
         const std::shared_ptr<Node<T, Internal_allocator>>& n1, const std::shared_ptr<Node<T, Internal_allocator>>& n2)
     {
+        // if denominator is zero constant, expression simplification is irrelevant
         if (n2->type() == NodeType::constant && n2->compute() == zero_value<T>()) {
-            throw std::invalid_argument{"constant zero node n2"};
+            return make_node<Div<T, Internal_allocator>>(n1, n2);
         }
 
-        if (n1->type() == NodeType::constant && n2->type() == NodeType::constant) {
+        if (n1->type() == NodeType::constant && n2->type() == NodeType::constant && n2->compute() != zero_value<T>()) {
             return constant<T, Internal_allocator>(n1->compute() / n2->compute());
         }
 

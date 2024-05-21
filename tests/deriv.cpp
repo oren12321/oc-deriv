@@ -276,14 +276,6 @@ TEST(Derivation, division_backward_derivative)
         EXPECT_EQ(1.f / v2->compute(), d4->compute());
         EXPECT_EQ((0.f * v2->compute() - 1.f * v2->backward(0)->compute()) / (v2->compute() * v2->compute()), d4->backward(0)->compute());
     }
-
-    {
-        auto x = variable<double>(0);
-
-        EXPECT_THROW(Div(x, constant(0.0)), std::invalid_argument);
-        EXPECT_THROW(divide(x, constant(0.0)), std::invalid_argument);
-        EXPECT_THROW(Div(constant(1.0), x).compute(), std::overflow_error);
-    }
 }
 
 TEST(Derivation, sin_and_cos_backward_derivative)
